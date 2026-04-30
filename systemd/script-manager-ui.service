@@ -18,7 +18,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/var/log/script-manager-ui /var/log/honeyfile_monitor.log /var/lib/honeyfile_last_alert_ts
+ReadWritePaths=/var/log/script-manager-ui
 
 # Logging
 StandardOutput=journal
