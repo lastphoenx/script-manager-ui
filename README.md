@@ -1,0 +1,345 @@
+# Script Manager UI
+
+Web-basiertes UI zum Verwalten und Ausführen von Scripts. Entwickelt für die zentrale Verwaltung von pCloud-Tools, EntropyWatcher und anderen Skripten.
+
+## Features
+
+✅ **Script-Katalog** - Zentrale YAML-Konfiguration für alle Skripte  
+✅ **Dynamische Formulare** - Parameter-Eingabe basierend auf Script-Definition  
+✅ **Job-History** - Alle Ausführungen mit Status und Logs in MariaDB  
+✅ **Live-Output** - Echtzeit-Log-Streaming per Polling  
+✅ **Authentik Integration** - Forward-Auth mit Username-Header  
+✅ **Multi-Repo Support** - Skripte aus verschiedenen Verzeichnissen (cwd-Support)  
+✅ **Responsive UI** - Bootstrap 5 Frontend
+
+---
+
+## Architektur
+
+```
+┌─────────────┐      ┌──────────────┐      ┌─────────────┐
+│   Nginx     │─────▶│   FastAPI    │─────▶│   MariaDB   │
+│ (Forward    │      │   Backend    │      │ (Job-History)│
+│  Auth)      │      └──────────────┘      └─────────────┘
+└─────────────┘              │
+                             │
+                     ┌───────┴───────┐
+                     │  Subprocess   │
+                     │  (Scripts)    │
+                     └───────────────┘
+```
+
+- **FastAPI**: RESTful API, Job-Management, Log-Streaming
+- **MariaDB**: Job-History, Status, Parameters
+- **scripts.yaml**: Script-Definitionen (Name, Parameter, cwd, env)
+- **Bootstrap UI**: Single-Page-App für Job-Verwaltung
+
+---
+
+## Installation
+
+### 1. Voraussetzungen
+
+- Python 3.9+
+- MariaDB 10.5+
+- Nginx (optional, für Authentik Forward-Auth)
+
+### 2. MariaDB Setup
+
+```bash
+# Datenbank und User erstellen
+sudo mysql -u root
+
+> source /opt/script-manager-ui/init_db.sql
+> CREATE USER 'script_manager'@'localhost' IDENTIFIED BY 'your_secure_password';
+> GRANT ALL ON script_manager.* TO 'script_manager'@'localhost';
+> FLUSH PRIVILEGES;
+> exit;
+```
+
+### 3. Python Environment
+
+```bash
+cd /opt/script-manager-ui
+
+# Virtual Environment erstellen
+python3 -m venv venv
+source venv/bin/activate
+
+# Dependencies installieren
+pip install -r requirements.txt
+```
+
+### 4. Konfiguration
+
+```bash
+# .env erstellen
+cp .env.example .env
+nano .env
+```
+
+Wichtige Settings in `.env`:
+
+```env
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=script_manager
+DB_USER=script_manager
+DB_PASS=your_secure_password
+
+HOST=127.0.0.1
+PORT=8000
+
+AUTHENTIK_HEADER=X-Authentik-Username
+AUTH_REQUIRED=true
+```
+
+### 5. Scripts konfigurieren
+
+Bearbeite `scripts.yaml` und passe die Pfade an deine Installation an:
+
+```yaml
+scripts:
+  - name: "EntropyWatcher Scan"
+    cmd: "python3"
+    args: ["entropywatcher.py", "scan"]
+    cwd: "/opt/entropywatcher"  # ← Anpassen!
+    # ...
+```
+
+**Wichtig**: Das `cwd`-Feld muss für jedes Script korrekt gesetzt sein!
+
+### 6. Test-Start
+
+```bash
+# Manueller Start (für Test)
+python3 main.py
+```
+
+Öffne im Browser: `http://localhost:8000`
+
+---
+
+## Deployment (Produktion)
+
+### Systemd Service
+
+```bash
+sudo nano /etc/systemd/system/script-manager-ui.service
+```
+
+```ini
+[Unit]
+Description=Script Manager UI
+After=network.target mariadb.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/script-manager-ui
+Environment="PATH=/opt/script-manager-ui/venv/bin"
+ExecStart=/opt/script-manager-ui/venv/bin/uvicorn main:app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable script-manager-ui.service
+sudo systemctl start script-manager-ui.service
+sudo systemctl status script-manager-ui.service
+```
+
+### Nginx Reverse Proxy (mit Authentik)
+
+```nginx
+server {
+    listen 80;
+    server_name scripts.yourdomain.de;
+    
+    # Authentik Forward Auth
+    location / {
+        auth_request /outpost.goauthentik.io/auth/nginx;
+        auth_request_set $authentik_username $upstream_http_x_authentik_username;
+        
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Authentik-Username $authentik_username;
+    }
+    
+    # Authentik endpoint
+    location /outpost.goauthentik.io {
+        proxy_pass http://authentik-server:9000/outpost.goauthentik.io;
+        # ... weitere Authentik-Config
+    }
+}
+```
+
+**Hinweis**: Wenn du Authentik nicht nutzt, setze in `.env`:
+
+```env
+AUTH_REQUIRED=false
+```
+
+---
+
+## Verwendung
+
+### Scripts hinzufügen
+
+Bearbeite `scripts.yaml`:
+
+```yaml
+scripts:
+  - name: "Mein Script"
+    description: "Kurze Beschreibung"
+    cmd: "python3"                    # Executable
+    args: ["mein_script.py"]          # Argumente
+    cwd: "/opt/meine-scripts"         # Arbeitsverzeichnis (wichtig!)
+    category: "Backup"                # Kategorie für UI-Gruppierung
+    tags: ["backup", "daily"]         # Tags
+    estimated_duration: "5-10min"     # Geschätzte Laufzeit
+    risk_level: "low"                 # low | medium | high
+    env_file: "/opt/scripts/.env"     # Optional: .env laden
+    params:
+      - name: source
+        type: path
+        label: "Quellpfad"
+        help: "Lokaler Pfad zum Backup"
+        required: true
+        default: "/mnt/data"
+      
+      - name: dry_run
+        type: bool
+        label: "Dry Run"
+        default: true
+        locked: true                  # User kann es nicht ändern
+```
+
+**Parameter-Typen:**
+- `string`: Textfeld
+- `int`: Zahleneingabe (mit `min`/`max`)
+- `bool`: Checkbox
+- `path`: Textfeld (Pfad-Eingabe)
+- `select`: Dropdown (`options` erforderlich)
+- `password`: Passwort-Feld (masked)
+
+Nach Änderungen an `scripts.yaml`: Server neu starten oder "Refresh Scripts" klicken.
+
+### Jobs verwalten
+
+1. **Script auswählen**: Klicke auf ein Script in der linken Liste
+2. **Parameter eingeben**: Formular wird dynamisch generiert
+3. **Start**: Klicke "Start Script"
+4. **Output anzeigen**: Job erscheint in der Job-Liste (rechts), klicke darauf für Live-Output
+5. **Kill**: Laufende Jobs können mit "Kill"-Button beendet werden
+
+### Job-History
+
+Alle Jobs werden in MariaDB persistiert:
+
+```sql
+-- Letzte 50 Jobs
+SELECT id, script_name, username, status, start_time, exit_code 
+FROM jobs 
+ORDER BY created_at DESC 
+LIMIT 50;
+
+-- Fehlgeschlagene Jobs
+SELECT * FROM jobs WHERE status = 'failed' ORDER BY created_at DESC;
+
+-- Laufende Jobs
+SELECT * FROM jobs WHERE status = 'running';
+```
+
+---
+
+## API Endpoints
+
+| Method | Endpoint | Beschreibung |
+|--------|----------|--------------|
+| GET | `/api/scripts` | Liste aller Scripts |
+| GET | `/api/scripts/{name}` | Script-Details |
+| POST | `/api/jobs` | Job starten |
+| GET | `/api/jobs` | Job-Liste (Filter: `?status=running&limit=50`) |
+| GET | `/api/jobs/{id}` | Job-Details |
+| GET | `/api/jobs/{id}/output` | Job-Output (Log) |
+| POST | `/api/jobs/{id}/kill` | Job beenden |
+| GET | `/api/stats` | Statistiken |
+| GET | `/health` | Health-Check |
+
+---
+
+## Troubleshooting
+
+### "Database connection error"
+
+```bash
+# DB-Verbindung testen
+sudo mysql -u script_manager -p script_manager
+
+# Passwort in .env prüfen
+cat .env | grep DB_PASS
+```
+
+### "Script not found"
+
+- Prüfe `scripts.yaml` auf Syntax-Fehler:
+  ```bash
+  python3 -c "import yaml; yaml.safe_load(open('scripts.yaml'))"
+  ```
+
+### "Failed to start job"
+
+- Prüfe `cwd`-Pfad in `scripts.yaml` (muss existieren!)
+- Prüfe Berechtigungen: `ls -la /opt/entropywatcher`
+- Log-Datei ansehen: `cat logs/job_123.log`
+
+### Jobs bleiben "pending"
+
+- Prüfe ob Backend läuft: `systemctl status script-manager-ui`
+- Prüfe Logs: `journalctl -u script-manager-ui -f`
+
+---
+
+## Sicherheit
+
+⚠️ **Wichtig für Produktion:**
+
+1. **Authentifizierung**: Nutze Authentik Forward-Auth oder setze `AUTH_REQUIRED=false` nur für Test
+2. **MariaDB-Passwort**: Verwende ein starkes Passwort
+3. **Firewall**: Port 8000 nur für Nginx erreichbar (oder localhost)
+4. **Script-Permissions**: Scripts laufen als `www-data` → keine Root-Rechte!
+5. **Parameter-Validierung**: Kritische Scripts mit `locked: true` absichern
+
+---
+
+## Roadmap / Erweiterungen
+
+Aktuell **nicht** im MVP (kann später ergänzt werden):
+
+- [ ] Live-Streaming via WebSocket/SSE
+- [ ] Pre-Checks & Validierung (Disk-Space, Mountpoint, etc.)
+- [ ] Dynamic Select Options (aus API/Command)
+- [ ] Notifications (Apprise-Integration)
+- [ ] Scheduler im UI (systemd-Timer-Alternative)
+- [ ] Approval-Workflows für kritische Scripts
+- [ ] Multi-Server Support (Remote-Execution via SSH)
+
+---
+
+## Lizenz
+
+MIT (oder deine bevorzugte Lizenz)
+
+---
+
+## Support
+
+Bei Fragen oder Problemen: Issue im Repository erstellen oder Logs prüfen.

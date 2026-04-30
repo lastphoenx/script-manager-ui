@@ -1,0 +1,29 @@
+[Unit]
+Description=Script Manager UI
+After=network.target mariadb.service
+Requires=mariadb.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/apps/script-manager-ui
+Environment="PATH=/opt/apps/script-manager-ui/venv/bin"
+ExecStart=/opt/apps/script-manager-ui/venv/bin/uvicorn main:app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=5
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/apps/script-manager-ui/logs
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=script-manager-ui
+
+[Install]
+WantedBy=multi-user.target

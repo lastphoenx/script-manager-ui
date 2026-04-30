@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Script Manager UI</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .script-card {
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .script-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .risk-low { border-left: 4px solid #28a745; }
+        .risk-medium { border-left: 4px solid #ffc107; }
+        .risk-high { border-left: 4px solid #dc3545; }
+        
+        .status-pending { color: #6c757d; }
+        .status-running { color: #0dcaf0; }
+        .status-success { color: #28a745; }
+        .status-failed { color: #dc3545; }
+        .status-killed { color: #6c757d; }
+        
+        .output-viewer {
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            padding: 15px;
+            border-radius: 4px;
+            max-height: 500px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .category-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+        }
+        
+        #jobsList .job-row {
+            cursor: pointer;
+        }
+        
+        #jobsList .job-row:hover {
+            background-color: #f1f3f5;
+        }
+        
+        .spinner-border-sm {
+            width: 1rem;
+            height: 1rem;
+            border-width: 0.2rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-dark bg-dark">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">
+                <i class="bi bi-terminal"></i> Script Manager UI
+            </span>
+            <div class="d-flex">
+                <button class="btn btn-outline-light btn-sm me-2" onclick="loadScripts()">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh Scripts
+                </button>
+                <button class="btn btn-outline-light btn-sm" onclick="loadJobs()">
+                    <i class="bi bi-list-task"></i> Refresh Jobs
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <!-- Left: Scripts -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-files"></i> Available Scripts</h5>
+                    </div>
+                    <div class="card-body" style="max-height: 80vh; overflow-y: auto;">
+                        <div id="scriptsList">
+                            <div class="text-center">
+                                <div class="spinner-border" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Middle: Script Details / Parameter Form -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-gear"></i> Script Configuration</h5>
+                    </div>
+                    <div class="card-body" style="max-height: 80vh; overflow-y: auto;">
+                        <div id="scriptDetails">
+                            <p class="text-muted">Wähle ein Script aus der Liste links.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right: Jobs & Output -->
+            <div class="col-md-4">
+                <div class="card mb-3">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Jobs</h5>
+                    </div>
+                    <div class="card-body p-0" style="max-height: 35vh; overflow-y: auto;">
+                        <div id="jobsList">
+                            <div class="text-center p-3">
+                                <div class="spinner-border spinner-border-sm" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-terminal-fill"></i> Job Output</h5>
+                        <button id="killJobBtn" class="btn btn-sm btn-danger" style="display: none;" onclick="killCurrentJob()">
+                            <i class="bi bi-x-circle"></i> Kill
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div id="jobOutput" class="output-viewer" style="min-height: 40vh;">
+                            <span class="text-muted">Wähle einen Job um die Ausgabe zu sehen.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Global state
+        let currentScript = null;
+        let currentJobId = null;
+        let outputOffset = 0;
+        let outputPollingInterval = null;
+        
+        // Load scripts on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadScripts();
+            loadJobs();
+            
+            // Auto-refresh jobs every 5 seconds
+            setInterval(loadJobs, 5000);
+        });
+        
+        // === Scripts ===
+        
+        async function loadScripts() {
+            try {
+                const response = await fetch('/api/scripts');
+                const scripts = await response.json();
+                
+                // Group by category
+                const categories = {};
+                scripts.forEach(script => {
+                    const cat = script.category || 'General';
+                    if (!categories[cat]) categories[cat] = [];
+                    categories[cat].push(script);
+                });
+                
+                let html = '';
+                Object.keys(categories).sort().forEach(category => {
+                    html += `<h6 class="text-muted mt-3 mb-2">${category}</h6>`;
+                    categories[category].forEach(script => {
+                        const riskClass = `risk-${script.risk_level}`;
+                        html += `
+                            <div class="card script-card mb-2 ${riskClass}" onclick="selectScript('${script.name}')">
+                                <div class="card-body p-2">
+                                    <h6 class="card-title mb-1">${script.name}</h6>
+                                    <p class="card-text small text-muted mb-1">${script.description}</p>
+                                    <div>
+                                        ${script.tags.map(tag => `<span class="badge bg-secondary category-badge">${tag}</span>`).join(' ')}
+                                        <span class="badge bg-info category-badge">${script.estimated_duration}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                });
+                
+                document.getElementById('scriptsList').innerHTML = html;
+            } catch (error) {
+                console.error('Failed to load scripts:', error);
+                document.getElementById('scriptsList').innerHTML = '<p class="text-danger">Failed to load scripts.</p>';
+            }
+        }
+        
+        async function selectScript(scriptName) {
+            try {
+                const response = await fetch(`/api/scripts/${encodeURIComponent(scriptName)}`);
+                currentScript = await response.json();
+                
+                renderScriptDetails(currentScript);
+            } catch (error) {
+                console.error('Failed to load script details:', error);
+            }
+        }
+        
+        function renderScriptDetails(script) {
+            const riskColor = {
+                'low': 'success',
+                'medium': 'warning',
+                'high': 'danger'
+            }[script.risk_level] || 'secondary';
+            
+            let html = `
+                <h5>${script.name}</h5>
+                <p class="text-muted">${script.description}</p>
+                
+                <div class="mb-3">
+                    <span class="badge bg-${riskColor}">Risk: ${script.risk_level}</span>
+                    <span class="badge bg-info">${script.estimated_duration}</span>
+                </div>
+                
+                <div class="mb-3">
+                    <small class="text-muted">
+                        <strong>Command:</strong> ${script.cmd} ${script.args.join(' ')}<br>
+                        <strong>Working Dir:</strong> ${script.cwd}
+                    </small>
+                </div>
+                
+                <hr>
+                
+                <h6>Parameters</h6>
+                <form id="parameterForm" onsubmit="startJob(event)">
+            `;
+            
+            script.params.forEach(param => {
+                html += renderParameter(param);
+            });
+            
+            html += `
+                    <div class="d-grid gap-2 mt-3">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-play-fill"></i> Start Script
+                        </button>
+                    </div>
+                </form>
+            `;
+            
+            document.getElementById('scriptDetails').innerHTML = html;
+        }
+        
+        function renderParameter(param) {
+            const required = param.required ? 'required' : '';
+            const helpText = param.help ? `<small class="form-text text-muted">${param.help}</small>` : '';
+            
+            let input = '';
+            
+            switch (param.type) {
+                case 'bool':
+                    const checked = param.default ? 'checked' : '';
+                    const disabled = param.locked ? 'disabled' : '';
+                    input = `
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="param_${param.name}" 
+                                   name="${param.name}" ${checked} ${disabled}>
+                            <label class="form-check-label" for="param_${param.name}">
+                                ${param.label}
+                            </label>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'select':
+                    input = `
+                        <label for="param_${param.name}" class="form-label">${param.label}</label>
+                        <select class="form-select" id="param_${param.name}" name="${param.name}" ${required}>
+                            ${param.options.map(opt => {
+                                const selected = opt === param.default ? 'selected' : '';
+                                return `<option value="${opt}" ${selected}>${opt}</option>`;
+                            }).join('')}
+                        </select>
+                    `;
+                    break;
+                    
+                case 'int':
+                    const min = param.min !== undefined ? `min="${param.min}"` : '';
+                    const max = param.max !== undefined ? `max="${param.max}"` : '';
+                    input = `
+                        <label for="param_${param.name}" class="form-label">${param.label}</label>
+                        <input type="number" class="form-control" id="param_${param.name}" 
+                               name="${param.name}" value="${param.default || ''}" 
+                               ${min} ${max} ${required}>
+                    `;
+                    break;
+                    
+                case 'password':
+                    input = `
+                        <label for="param_${param.name}" class="form-label">${param.label}</label>
+                        <input type="password" class="form-control" id="param_${param.name}" 
+                               name="${param.name}" ${required}>
+                    `;
+                    break;
+                    
+                default: // string, path
+                    input = `
+                        <label for="param_${param.name}" class="form-label">${param.label}</label>
+                        <input type="text" class="form-control" id="param_${param.name}" 
+                               name="${param.name}" value="${param.default || ''}" ${required}>
+                    `;
+            }
+            
+            return `
+                <div class="mb-3">
+                    ${input}
+                    ${helpText}
+                </div>
+            `;
+        }
+        
+        async function startJob(event) {
+            event.preventDefault();
+            
+            if (!currentScript) return;
+            
+            const form = event.target;
+            const formData = new FormData(form);
+            const parameters = {};
+            
+            currentScript.params.forEach(param => {
+                const value = formData.get(param.name);
+                
+                if (param.type === 'bool') {
+                    parameters[param.name] = form.elements[param.name].checked;
+                } else if (param.type === 'int') {
+                    parameters[param.name] = value ? parseInt(value) : null;
+                } else {
+                    parameters[param.name] = value || null;
+                }
+            });
+            
+            try {
+                const response = await fetch('/api/jobs', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        script_name: currentScript.name,
+                        parameters: parameters
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to start job');
+                }
+                
+                const result = await response.json();
+                alert(`Job started successfully! Job ID: ${result.job.id}`);
+                
+                // Refresh jobs list and select the new job
+                await loadJobs();
+                selectJob(result.job.id);
+                
+            } catch (error) {
+                console.error('Failed to start job:', error);
+                alert('Failed to start job. Check console for details.');
+            }
+        }
+        
+        // === Jobs ===
+        
+        async function loadJobs() {
+            try {
+                const response = await fetch('/api/jobs?limit=50');
+                const jobs = await response.json();
+                
+                if (jobs.length === 0) {
+                    document.getElementById('jobsList').innerHTML = '<p class="text-muted p-3">Keine Jobs vorhanden.</p>';
+                    return;
+                }
+                
+                let html = '<table class="table table-sm table-hover mb-0"><tbody>';
+                
+                jobs.forEach(job => {
+                    const statusIcon = {
+                        'pending': 'hourglass-split',
+                        'running': 'arrow-repeat',
+                        'success': 'check-circle-fill',
+                        'failed': 'x-circle-fill',
+                        'killed': 'slash-circle'
+                    }[job.status] || 'question-circle';
+                    
+                    const statusClass = `status-${job.status}`;
+                    const timeStr = job.start_time ? new Date(job.start_time).toLocaleString('de-DE') : 'Pending';
+                    
+                    html += `
+                        <tr class="job-row" onclick="selectJob(${job.id})">
+                            <td style="width: 30px;">
+                                <i class="bi bi-${statusIcon} ${statusClass}"></i>
+                            </td>
+                            <td>
+                                <strong>${job.script_name}</strong><br>
+                                <small class="text-muted">${timeStr}</small>
+                            </td>
+                            <td class="text-end" style="width: 60px;">
+                                <span class="badge bg-secondary">#${job.id}</span>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table>';
+                document.getElementById('jobsList').innerHTML = html;
+                
+            } catch (error) {
+                console.error('Failed to load jobs:', error);
+            }
+        }
+        
+        async function selectJob(jobId) {
+            currentJobId = jobId;
+            outputOffset = 0;
+            
+            // Stop previous polling
+            if (outputPollingInterval) {
+                clearInterval(outputPollingInterval);
+                outputPollingInterval = null;
+            }
+            
+            // Load initial output
+            await loadJobOutput();
+            
+            // Check job status
+            const job = await getJobDetails(jobId);
+            
+            // Show kill button if job is running
+            const killBtn = document.getElementById('killJobBtn');
+            if (job && (job.status === 'running' || job.status === 'pending')) {
+                killBtn.style.display = 'block';
+                
+                // Start polling for output
+                outputPollingInterval = setInterval(loadJobOutput, 2000);
+            } else {
+                killBtn.style.display = 'none';
+            }
+        }
+        
+        async function getJobDetails(jobId) {
+            try {
+                const response = await fetch(`/api/jobs/${jobId}`);
+                return await response.json();
+            } catch (error) {
+                console.error('Failed to get job details:', error);
+                return null;
+            }
+        }
+        
+        async function loadJobOutput() {
+            if (!currentJobId) return;
+            
+            try {
+                const response = await fetch(`/api/jobs/${currentJobId}/output?offset=${outputOffset}`);
+                const data = await response.json();
+                
+                const outputDiv = document.getElementById('jobOutput');
+                
+                if (data.output) {
+                    outputDiv.textContent += data.output;
+                    outputOffset = data.offset;
+                    
+                    // Auto-scroll to bottom
+                    outputDiv.scrollTop = outputDiv.scrollHeight;
+                }
+                
+                // Check if job finished
+                const job = await getJobDetails(currentJobId);
+                if (job && job.status !== 'running' && job.status !== 'pending') {
+                    // Stop polling
+                    if (outputPollingInterval) {
+                        clearInterval(outputPollingInterval);
+                        outputPollingInterval = null;
+                    }
+                    
+                    // Hide kill button
+                    document.getElementById('killJobBtn').style.display = 'none';
+                    
+                    // Reload jobs list to update status
+                    loadJobs();
+                }
+                
+            } catch (error) {
+                console.error('Failed to load job output:', error);
+            }
+        }
+        
+        async function killCurrentJob() {
+            if (!currentJobId) return;
+            
+            if (!confirm('Möchtest du diesen Job wirklich beenden?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/jobs/${currentJobId}/kill`, {
+                    method: 'POST'
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to kill job');
+                }
+                
+                alert('Job wurde beendet.');
+                
+                // Stop polling and reload
+                if (outputPollingInterval) {
+                    clearInterval(outputPollingInterval);
+                    outputPollingInterval = null;
+                }
+                
+                document.getElementById('killJobBtn').style.display = 'none';
+                loadJobs();
+                
+            } catch (error) {
+                console.error('Failed to kill job:', error);
+                alert('Fehler beim Beenden des Jobs.');
+            }
+        }
+    </script>
+</body>
+</html>
