@@ -227,7 +227,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/opt/apps/script-manager-ui/logs
+ReadWritePaths=/var/log/script-manager-ui /srv/nas/restore
 
 [Install]
 WantedBy=multi-user.target
