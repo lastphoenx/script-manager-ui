@@ -28,7 +28,7 @@ scripts:
         type: string
         label: "Datei-Pfad im Backup"
         help: "Vollständiger pCloud-Pfad zur wiederherzustellenden Datei"
-        default: "/Backup/rtb_1to1/_snapshots/2026-04-27-173201/Thomas/Dokumente/2018-03-0520-17-02_Kursbestätigung_Arbeitorganisation_&_Zeitmanagement.pdf"
+        default: "/Backup/rtb_1to1/_snapshots/2026-04-27-173201/Thomas/Ausbildung/2018-03-0520-17-02_Kursbestätigung_Arbeitorganisation_&_Zeitmanagement.pdf"
         required: false
       
       - name: folder
