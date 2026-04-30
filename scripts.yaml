@@ -209,6 +209,7 @@ scripts:
     env:
       HONEYFILE_LOG_FILE: "/dev/null"
       HONEYFILE_LAST_PROCESSED: "/tmp/honeyfile_last_alert_ts"
+      HONEYFILE_ALERT_FLAG: "/tmp/honeyfile_alert"
     category: "Security"
     tags: ["entropy", "honeyfile", "tamper-detection"]
     estimated_duration: "<1min"
