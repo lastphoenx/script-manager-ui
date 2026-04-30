@@ -170,7 +170,7 @@ scripts:
   - name: "EW Status"
     description: "Aktueller EntropyWatcher-Status und Integritäts-Check"
     cmd: "/bin/bash"
-    args: ["scripts/ew_status.sh"]
+    args: ["scripts/ew_status.sh", "../config"]
     cwd: "/opt/apps/entropywatcher/main"
     env_file: "../config/common.env"
     category: "Security"
