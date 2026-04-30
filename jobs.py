@@ -120,17 +120,21 @@ class JobManager:
                 env_file_path = Path(script.cwd) / script.env_file
                 if env_file_path.exists():
                     env_vars = self._load_env_file(str(env_file_path))
-                    # Special handling for PATH: append instead of replace
+                    # Special handling for PATH/PYTHONPATH: append instead of replace
                     if 'PATH' in env_vars:
                         env_vars['PATH'] = f"{env_vars['PATH']}:{env.get('PATH', '')}"
+                    if 'PYTHONPATH' in env_vars:
+                        env_vars['PYTHONPATH'] = f"{env_vars['PYTHONPATH']}:{env.get('PYTHONPATH', '')}"
                     env.update(env_vars)
                 else:
                     logger.warning(f"env_file not found: {env_file_path}")
             
-            # Add inline env (also with PATH append logic)
+            # Add inline env (also with PATH/PYTHONPATH append logic)
             script_env = script.env.copy()  # Create local copy to avoid mutating original
             if 'PATH' in script_env:
                 script_env['PATH'] = f"{script_env['PATH']}:{env.get('PATH', '')}"
+            if 'PYTHONPATH' in script_env:
+                script_env['PYTHONPATH'] = f"{script_env['PYTHONPATH']}:{env.get('PYTHONPATH', '')}"
             env.update(script_env)
             
             # Create log file
