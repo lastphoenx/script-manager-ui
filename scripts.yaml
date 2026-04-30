@@ -172,6 +172,7 @@ scripts:
     cmd: "/bin/bash"
     args: ["scripts/ew_status.sh"]
     cwd: "/opt/apps/entropywatcher/main"
+    env_file: "../config/common.env"
     category: "Security"
     tags: ["entropy", "status", "security"]
     estimated_duration: "<1min"
@@ -182,6 +183,7 @@ scripts:
     cmd: "/bin/bash"
     args: ["scripts/ew_forecast_next_run.sh"]
     cwd: "/opt/apps/entropywatcher/main"
+    env_file: "../config/common.env"
     category: "Security"
     tags: ["entropy", "forecast", "scheduling"]
     estimated_duration: "<1min"
@@ -192,6 +194,7 @@ scripts:
     cmd: "/bin/bash"
     args: ["scripts/ew_backup_slot_check.sh"]
     cwd: "/opt/apps/entropywatcher/main"
+    env_file: "../config/common.env"
     category: "Security"
     tags: ["entropy", "backup", "scheduling"]
     estimated_duration: "<1min"
@@ -202,6 +205,7 @@ scripts:
     cmd: "/bin/bash"
     args: ["honeyfile_monitor.sh"]
     cwd: "/opt/apps/entropywatcher/main"
+    env_file: "../config/common.env"
     category: "Security"
     tags: ["entropy", "honeyfile", "tamper-detection"]
     estimated_duration: "<1min"
@@ -212,6 +216,7 @@ scripts:
     cmd: "/bin/bash"
     args: ["safety_gate.sh"]
     cwd: "/opt/apps/entropywatcher/main"
+    env_file: "../config/common.env"
     category: "Security"
     tags: ["entropy", "safety-gate", "write-protection"]
     estimated_duration: "<1min"
@@ -222,6 +227,7 @@ scripts:
     cmd: "/bin/bash"
     args: ["scripts/forecast_safety_gate.sh"]
     cwd: "/opt/apps/entropywatcher/main"
+    env_file: "../config/common.env"
     category: "Security"
     tags: ["entropy", "forecast", "safety-gate"]
     estimated_duration: "<1min"
