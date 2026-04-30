@@ -117,11 +117,18 @@ scripts:
         required: true
         default: "/Backup/rtb_1to1"
       
-      - name: verify_random
+      - name: stub_sample
         type: int
-        label: "Stichproben-Anzahl"
-        help: "0 = alle Dateien prüfen"
-        default: 0
+        label: "Stub-Stichproben pro Snapshot"
+        help: "Anzahl Stub-Dateien zu pr\u00fcfen (0 = alle)"
+        default: 100
+        min: 0
+      
+      - name: checksum_sample
+        type: int
+        label: "Checksum-Stichproben"
+        help: "Anzahl Index-Checksums zu pr\u00fcfen (0 = alle)"
+        default: 50
         min: 0
 
   - name: "Verify Index vs Manifests"
@@ -142,7 +149,7 @@ scripts:
         required: true
         default: "/Backup/rtb_1to1"
       
-      - name: local_manifests_dir
+      - name: manifest_dir
         type: path
         label: "Lokale Manifest-Verzeichnis"
         help: "Wo liegen die lokalen .json Manifeste?"
