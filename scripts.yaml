@@ -1,16 +1,70 @@
-# Script Manager UI - Script Definitions
-# Jedes Skript wird hier mit Namen, Pfad, Parametern und Metadaten definiert.
+# Script Manager UI - Production-Ready Script Definitions
+# Focus: Operational utilities, verification, restore, and monitoring
+# Excluded: Pipeline scripts (scan, init, manifest generation) - these run via systemd.timer
 
 scripts:
-  # ==================== pCloud Tools ====================
+  # ==================== RECOVERY (Critical Priority) ====================
+  
+  - name: "pCloud Restore"
+    description: "Einzelne Datei/Ordner aus Backup nach /srv/restore wiederherstellen"
+    cmd: "python3"
+    args: ["scripts/utilities/pcloud_restore.py"]
+    cwd: "/opt/apps/pcloud-tools/main"
+    category: "Recovery"
+    tags: ["backup", "restore", "recovery"]
+    estimated_duration: "1-5min"
+    risk_level: "low"
+    params:
+      - name: source_path
+        type: string
+        label: "Pfad im Backup"
+        help: "z.B. /Backup/rtb_1to1/_snapshots/2026-04-27-173201/Thomas/Dokumente/file.pdf"
+        required: true
+      
+      - name: dest_dir
+        type: path
+        label: "Restore-Zielverzeichnis"
+        help: "Lokaler Pfad wo die Datei wiederhergestellt wird"
+        default: "/srv/restore"
+        required: true
+
+  # ==================== BACKUP ====================
+  
+  - name: "RTB Backup"
+    description: "Rsync Time Backup - Inkrementelles Snapshot-Backup"
+    cmd: "/bin/bash"
+    args: ["rtb_wrapper.sh"]
+    cwd: "/opt/apps/rtb"
+    category: "Backup"
+    tags: ["backup", "rsync", "snapshot"]
+    estimated_duration: "5-30min"
+    risk_level: "high"
+    params:
+      - name: dry_run
+        type: bool
+        label: "Dry Run (Simulation)"
+        help: "Führt nur Simulation aus, keine echten Änderungen"
+        default: true
+      
+      - name: source
+        type: path
+        label: "Quellverzeichnis"
+        required: true
+      
+      - name: destination
+        type: path
+        label: "Zielverzeichnis"
+        required: true
+
+  # ==================== VERIFICATION & INTEGRITY ====================
   
   - name: "pCloud Quick Delta"
     description: "Schnelle Tamper-Detection für pCloud-Backups"
     cmd: "python3"
     args: ["pcloud_quick_delta.py"]
-    cwd: "/opt/pcloud-tools"
-    category: "pCloud"
-    tags: ["backup", "verification", "pcloud"]
+    cwd: "/opt/apps/pcloud-tools/main"
+    category: "Verification"
+    tags: ["backup", "verification", "integrity"]
     estimated_duration: "2-5min"
     risk_level: "low"
     params:
@@ -34,255 +88,166 @@ scripts:
         help: "Gründlicherer Check für Lücken (langsamer)"
         default: false
       
-      - name: backfill_sample
-        type: int
-        label: "Backfill Stichprobe"
-        help: "Anzahl Nodes (0 = alle)"
-        default: 0
-        min: 0
-      
       - name: json_out
         type: path
         label: "JSON Report Ausgabe"
         help: "Optional: Report als JSON speichern"
         required: false
 
-  - name: "pCloud JSON Manifest"
-    description: "Lokales Snapshot-Manifest erzeugen"
+  - name: "pCloud Integrity Check"
+    description: "Verifiziert Stub-Dateien gegen content_index.json"
     cmd: "python3"
-    args: ["pcloud_json_manifest.py"]
-    cwd: "/opt/pcloud-tools"
-    category: "pCloud"
-    tags: ["backup", "manifest", "pcloud"]
-    estimated_duration: "10-30min"
-    risk_level: "low"
-    params:
-      - name: source_root
-        type: path
-        label: "Quellverzeichnis"
-        help: "Lokaler Pfad zum Scannen"
-        required: true
-        default: "/mnt/backup"
-      
-      - name: output
-        type: path
-        label: "Ausgabe JSON"
-        help: "Pfad zur Manifest-Datei"
-        required: true
-        default: "/tmp/manifest.json"
-      
-      - name: workers
-        type: int
-        label: "Worker-Prozesse"
-        help: "Anzahl paralleler Hash-Worker"
-        default: 4
-        min: 1
-        max: 16
-
-  - name: "pCloud Manifest Diff"
-    description: "Vergleicht zwei Manifeste und zeigt Unterschiede"
-    cmd: "python3"
-    args: ["pcloud_manifest_diff.py"]
-    cwd: "/opt/pcloud-tools"
-    category: "pCloud"
-    tags: ["backup", "diff", "pcloud"]
-    estimated_duration: "1-2min"
-    risk_level: "low"
-    params:
-      - name: old
-        type: path
-        label: "Altes Manifest"
-        required: true
-      
-      - name: new
-        type: path
-        label: "Neues Manifest"
-        required: true
-      
-      - name: output
-        type: select
-        label: "Ausgabeformat"
-        options: ["text", "json"]
-        default: "text"
-
-  # ==================== EntropyWatcher ====================
-  
-  - name: "EntropyWatcher Scan"
-    description: "Delta-Scan: nur neue/geänderte Dateien prüfen"
-    cmd: "python3"
-    args: ["entropywatcher.py", "scan"]
-    cwd: "/opt/entropywatcher"
-    category: "Security"
-    tags: ["entropy", "security", "monitoring"]
+    args: ["scripts/utilities/pcloud_integrity_check.py"]
+    cwd: "/opt/apps/pcloud-tools/main"
+    category: "Verification"
+    tags: ["backup", "integrity", "verification"]
     estimated_duration: "5-15min"
     risk_level: "low"
-    env_file: "/opt/entropywatcher/common.env"
     params:
-      - name: paths
-        type: string
-        label: "Scan-Pfade (kommagetrennt)"
-        help: "z.B. /srv/nas,/mnt/data"
-        required: true
-      
-      - name: env
-        type: select
-        label: "Zusätzliche Umgebung"
-        help: "Optionale .env-Datei für Quelle"
-        options: ["", "nas.env", "os.env"]
-        default: ""
-
-  - name: "EntropyWatcher Initial Scan"
-    description: "Einmaliger Basis-Scan (Baseline setzen)"
-    cmd: "python3"
-    args: ["entropywatcher.py", "init-scan"]
-    cwd: "/opt/entropywatcher"
-    category: "Security"
-    tags: ["entropy", "security", "init"]
-    estimated_duration: "30-90min"
-    risk_level: "medium"
-    env_file: "/opt/entropywatcher/common.env"
-    params:
-      - name: paths
-        type: string
-        label: "Scan-Pfade (kommagetrennt)"
-        required: true
-      
-      - name: force
-        type: bool
-        label: "Force (DB überschreiben)"
-        help: "Erzwingt Vollscan auch bei existierenden Einträgen"
-        default: false
-      
-      - name: env
-        type: select
-        label: "Zusätzliche Umgebung"
-        options: ["", "nas.env", "os.env"]
-        default: ""
-
-  - name: "EntropyWatcher AV Scan"
-    description: "ClamAV-Scan über angegebene Pfade"
-    cmd: "python3"
-    args: ["entropywatcher.py", "av-scan"]
-    cwd: "/opt/entropywatcher"
-    category: "Security"
-    tags: ["antivirus", "clamav", "security"]
-    estimated_duration: "15-60min"
-    risk_level: "low"
-    env_file: "/opt/entropywatcher/common.env"
-    params:
-      - name: paths
-        type: string
-        label: "Scan-Pfade (kommagetrennt)"
-        required: true
-      
-      - name: env
-        type: select
-        label: "Zusätzliche Umgebung"
-        options: ["", "nas-av.env", "os-av.env"]
-        default: ""
-
-  - name: "EntropyWatcher Report"
-    description: "Zeigt Scan-Ergebnisse und Status"
-    cmd: "python3"
-    args: ["entropywatcher.py", "report"]
-    cwd: "/opt/entropywatcher"
-    category: "Security"
-    tags: ["entropy", "report"]
-    estimated_duration: "<1min"
-    risk_level: "low"
-    env_file: "/opt/entropywatcher/common.env"
-    params:
-      - name: only_flagged
-        type: bool
-        label: "Nur verdächtige Dateien"
-        default: false
-      
-      - name: since_missing
-        type: bool
-        label: "Fehlende Dateien zeigen"
-        default: false
-      
-      - name: source
-        type: select
-        label: "Quelle filtern"
-        options: ["", "os", "nas"]
-        default: ""
-      
-      - name: export
+      - name: dest_root
         type: path
-        label: "Export-Datei (optional)"
-        help: "CSV oder JSON Export"
-        required: false
+        label: "pCloud Backup Root"
+        help: "z.B. /Backup/rtb_1to1"
+        required: true
+        default: "/Backup/rtb_1to1"
       
-      - name: format
-        type: select
-        label: "Export-Format"
-        options: ["csv", "json"]
-        default: "csv"
+      - name: verify_random
+        type: int
+        label: "Stichproben-Anzahl"
+        help: "0 = alle Dateien prüfen"
+        default: 0
+        min: 0
 
-  - name: "EntropyWatcher DB Report"
-    description: "Vordefinierte DB-Reports (Status, AV-Events, etc.)"
+  - name: "Verify Index vs Manifests"
+    description: "Vergleicht content_index.json mit lokalen JSON-Manifesten"
     cmd: "python3"
-    args: ["entropywatcher.py", "db-report"]
-    cwd: "/opt/entropywatcher"
-    category: "Security"
-    tags: ["entropy", "database", "report"]
-    estimated_duration: "<1min"
+    args: ["scripts/utilities/pcloud_verify_index_vs_manifests.py"]
+    cwd: "/opt/apps/pcloud-tools/main"
+    category: "Verification"
+    tags: ["backup", "verification", "index"]
+    estimated_duration: "2-5min"
     risk_level: "low"
-    env_file: "/opt/entropywatcher/common.env"
     params:
-      - name: what
-        type: select
-        label: "Report-Typ"
-        options: ["status", "flagged", "av", "summary", "missing", "recent", "last-runs"]
-        default: "status"
+      - name: dest_root
+        type: path
+        label: "pCloud Backup Root"
+        required: true
+        default: "/Backup/rtb_1to1"
       
-      - name: source
-        type: string
-        label: "Quelle filtern (optional)"
-        help: "z.B. os, nas, os-av"
-        required: false
-      
-      - name: hours
-        type: int
-        label: "Zeitfenster (Stunden)"
-        default: 24
-        min: 1
-      
-      - name: limit
-        type: int
-        label: "Max. Zeilen"
-        default: 50
-        min: 1
+      - name: local_manifests_dir
+        type: path
+        label: "Lokale Manifest-Verzeichnis"
+        help: "Wo liegen die lokalen .json Manifeste?"
+        required: true
 
-  # ==================== RTB (Rsync Time Backup) ====================
+  # ==================== ANALYSIS ====================
   
-  - name: "RTB Wrapper"
-    description: "Rsync Time Backup mit Wrapper (nur bei Änderungen)"
-    cmd: "/bin/bash"
-    args: ["rtb_wrapper.sh"]
-    cwd: "/opt/rtb"
-    category: "Backup"
-    tags: ["rsync", "backup", "snapshot"]
-    estimated_duration: "5-30min"
-    risk_level: "high"
+  - name: "Duplikate Analyse"
+    description: "Sucht identische Dateien im Backup-Manifest (Excel-Export)"
+    cmd: "python3"
+    args: ["scripts/analyze_manifest_duplicates.py"]
+    cwd: "/opt/apps/pcloud-tools/main"
+    category: "Analysis"
+    tags: ["backup", "analysis", "duplicates"]
+    estimated_duration: "5-20min"
+    risk_level: "low"
     params:
-      - name: dry_run
-        type: bool
-        label: "Dry Run (Testmodus)"
-        help: "Führt nur Simulation aus"
-        default: true
-        locked: true
-      
-      - name: source
+      - name: manifest_path
         type: path
-        label: "Quellverzeichnis"
+        label: "Manifest JSON"
+        help: "Pfad zum content_index.json oder manifest.json"
         required: true
       
-      - name: destination
+      - name: output
         type: path
-        label: "Zielverzeichnis"
+        label: "Excel-Ausgabe"
+        help: "Pfad zur Excel-Datei"
+        default: "/tmp/duplicates.xlsx"
         required: true
+
+  # ==================== SECURITY (EntropyWatcher) ====================
+  
+  - name: "EW Status"
+    description: "Aktueller EntropyWatcher-Status und Integritäts-Check"
+    cmd: "/bin/bash"
+    args: ["scripts/ew_status.sh"]
+    cwd: "/opt/apps/entropywatcher/main"
+    category: "Security"
+    tags: ["entropy", "status", "security"]
+    estimated_duration: "<1min"
+    risk_level: "low"
+
+  - name: "EW Forecast Next Run"
+    description: "Wann läuft der nächste EntropyWatcher-Scan?"
+    cmd: "/bin/bash"
+    args: ["scripts/ew_forecast_next_run.sh"]
+    cwd: "/opt/apps/entropywatcher/main"
+    category: "Security"
+    tags: ["entropy", "forecast", "scheduling"]
+    estimated_duration: "<1min"
+    risk_level: "low"
+
+  - name: "EW Backup Slot Check"
+    description: "Prüft ob Backup-Slot verfügbar ist (Kollisionsvermeidung)"
+    cmd: "/bin/bash"
+    args: ["scripts/ew_backup_slot_check.sh"]
+    cwd: "/opt/apps/entropywatcher/main"
+    category: "Security"
+    tags: ["entropy", "backup", "scheduling"]
+    estimated_duration: "<1min"
+    risk_level: "low"
+
+  - name: "Honeyfile Monitor"
+    description: "Statusprüfung der Köder-Dateien (Tamper-Detection)"
+    cmd: "/bin/bash"
+    args: ["honeyfile_monitor.sh"]
+    cwd: "/opt/apps/entropywatcher/main"
+    category: "Security"
+    tags: ["entropy", "honeyfile", "tamper-detection"]
+    estimated_duration: "<1min"
+    risk_level: "low"
+
+  - name: "Safety Gate Status"
+    description: "Prüft ob Sicherheits-Gate (Schreibschutz) aktiv ist"
+    cmd: "/bin/bash"
+    args: ["safety_gate.sh"]
+    cwd: "/opt/apps/entropywatcher/main"
+    category: "Security"
+    tags: ["entropy", "safety-gate", "write-protection"]
+    estimated_duration: "<1min"
+    risk_level: "low"
+
+  - name: "Forecast Safety Gate"
+    description: "Prognostiziert wann das Safety Gate aktiv sein wird"
+    cmd: "/bin/bash"
+    args: ["scripts/forecast_safety_gate.sh"]
+    cwd: "/opt/apps/entropywatcher/main"
+    category: "Security"
+    tags: ["entropy", "forecast", "safety-gate"]
+    estimated_duration: "<1min"
+    risk_level: "low"
+
+  # ==================== REPORTS ====================
+  
+  - name: "pCloud Aggregate Status"
+    description: "Zusammenfassung aller pCloud-Backup-Status"
+    cmd: "/bin/bash"
+    args: ["scripts/aggregate_status.sh"]
+    cwd: "/opt/apps/pcloud-tools/main"
+    category: "Reports"
+    tags: ["backup", "status", "monitoring"]
+    estimated_duration: "1-2min"
+    risk_level: "low"
+
+  - name: "pCloud Generate Reports"
+    description: "Generiert detaillierte Backup-Reports (HTML/JSON)"
+    cmd: "/bin/bash"
+    args: ["scripts/generate_reports.sh"]
+    cwd: "/opt/apps/pcloud-tools/main"
+    category: "Reports"
+    tags: ["backup", "reports", "html"]
+    estimated_duration: "2-5min"
+    risk_level: "low"
 
 # Parameter-Typen:
 # - string: Einfaches Textfeld
@@ -290,4 +255,3 @@ scripts:
 # - bool: Checkbox
 # - path: Textfeld mit Pfad-Validierung
 # - select: Dropdown (options erforderlich)
-# - password: Passwort-Feld (masked)
