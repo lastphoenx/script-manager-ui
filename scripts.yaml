@@ -17,18 +17,52 @@ scripts:
     estimated_duration: "1-5min"
     risk_level: "low"
     params:
-      - name: source_path
+      - name: manifest
         type: string
-        label: "Pfad im Backup"
-        help: "z.B. /Backup/rtb_1to1/_snapshots/2026-04-27-173201/Thomas/Dokumente/file.pdf"
+        label: "Manifest-Quelle"
+        help: "'pcloud' für Remote-Index oder lokaler Manifest-Pfad"
+        default: "pcloud"
         required: true
       
-      - name: dest_dir
+      - name: file
+        type: string
+        label: "Datei-Pfad im Backup"
+        help: "Vollständiger pCloud-Pfad zur wiederherzustellenden Datei"
+        default: "/Backup/rtb_1to1/_snapshots/2026-04-27-173201/Thomas/Dokumente/2018-03-0520-17-02_Kursbestätigung_Arbeitorganisation_&_Zeitmanagement.pdf"
+        required: false
+      
+      - name: folder
+        type: string
+        label: "Ordner-Pfad im Backup (alternativ)"
+        help: "Für rekursiven Download eines ganzen Ordners"
+        required: false
+      
+      - name: snapshot
+        type: string
+        label: "Snapshot-Name (alternativ)"
+        help: "z.B. 2026-04-27-173201 für vollständiges Snapshot-Restore"
+        required: false
+      
+      - name: out_dir
         type: path
         label: "Restore-Zielverzeichnis"
-        help: "Lokaler Pfad wo die Datei wiederhergestellt wird"
+        help: "Lokaler Pfad wo wiederhergestellt wird"
         default: "/srv/restore"
         required: true
+      
+      - name: download
+        type: boolean
+        label: "Wirklich downloaden?"
+        help: "false = nur Plan anzeigen, true = tatsächlich downloaden"
+        default: true
+        required: false
+      
+      - name: verify
+        type: boolean
+        label: "SHA256-Verifikation?"
+        help: "Integrität nach Download prüfen"
+        default: true
+        required: false
 
   # ==================== BACKUP ====================
   
