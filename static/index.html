@@ -63,6 +63,16 @@
             height: 1rem;
             border-width: 0.2rem;
         }
+        
+        /* Spin animation for refresh buttons */
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .bi-spin {
+            animation: spin 1s linear infinite;
+        }
     </style>
 </head>
 <body>
@@ -73,10 +83,10 @@
                 <i class="bi bi-terminal"></i> Script Manager UI
             </span>
             <div class="d-flex">
-                <button class="btn btn-outline-light btn-sm me-2" onclick="loadScripts()">
+                <button id="refreshScriptsBtn" class="btn btn-outline-light btn-sm me-2" onclick="refreshScripts()">
                     <i class="bi bi-arrow-clockwise"></i> Refresh Scripts
                 </button>
-                <button class="btn btn-outline-light btn-sm" onclick="loadJobs()">
+                <button id="refreshJobsBtn" class="btn btn-outline-light btn-sm" onclick="refreshJobs()">
                     <i class="bi bi-list-task"></i> Refresh Jobs
                 </button>
             </div>
@@ -169,6 +179,42 @@
             // Auto-refresh jobs every 5 seconds
             setInterval(loadJobs, 5000);
         });
+        
+        // === Button Refresh Handlers with Visual Feedback ===
+        
+        async function refreshScripts() {
+            const btn = document.getElementById('refreshScriptsBtn');
+            const icon = btn.querySelector('i');
+            
+            // Disable button and show spinner
+            btn.disabled = true;
+            icon.classList.add('bi-spin');
+            
+            await loadScripts();
+            
+            // Re-enable button and restore icon
+            setTimeout(() => {
+                btn.disabled = false;
+                icon.classList.remove('bi-spin');
+            }, 300);
+        }
+        
+        async function refreshJobs() {
+            const btn = document.getElementById('refreshJobsBtn');
+            const icon = btn.querySelector('i');
+            
+            // Disable button and show spinner
+            btn.disabled = true;
+            icon.classList.add('bi-spin');
+            
+            await loadJobs();
+            
+            // Re-enable button and restore icon
+            setTimeout(() => {
+                btn.disabled = false;
+                icon.classList.remove('bi-spin');
+            }, 300);
+        }
         
         // === Scripts ===
         
