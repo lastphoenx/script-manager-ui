@@ -128,9 +128,10 @@ class JobManager:
                     logger.warning(f"env_file not found: {env_file_path}")
             
             # Add inline env (also with PATH append logic)
-            if 'PATH' in script.env:
-                script.env['PATH'] = f"{script.env['PATH']}:{env.get('PATH', '')}"
-            env.update(script.env)
+            script_env = script.env.copy()  # Create local copy to avoid mutating original
+            if 'PATH' in script_env:
+                script_env['PATH'] = f"{script_env['PATH']}:{env.get('PATH', '')}"
+            env.update(script_env)
             
             # Create log file
             log_file = settings.LOGS_DIR / f"job_{job_id}.log"
