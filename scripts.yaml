@@ -206,6 +206,8 @@ scripts:
     args: ["honeyfile_monitor.sh"]
     cwd: "/opt/apps/entropywatcher/main"
     env_file: "../config/common.env"
+    env:
+      HONEYFILE_LOG_FILE: "/dev/null"
     category: "Security"
     tags: ["entropy", "honeyfile", "tamper-detection"]
     estimated_duration: "<1min"
