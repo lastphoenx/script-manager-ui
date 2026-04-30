@@ -10,6 +10,8 @@ scripts:
     cmd: "python3"
     args: ["scripts/utilities/pcloud_restore.py"]
     cwd: "/opt/apps/pcloud-tools/main"
+    env:
+      PYTHONPATH: "/opt/apps/pcloud-tools/main"
     category: "Recovery"
     tags: ["backup", "restore", "recovery"]
     estimated_duration: "1-5min"
@@ -63,6 +65,8 @@ scripts:
     cmd: "python3"
     args: ["pcloud_quick_delta.py"]
     cwd: "/opt/apps/pcloud-tools/main"
+    env:
+      PYTHONPATH: "/opt/apps/pcloud-tools/main"
     category: "Verification"
     tags: ["backup", "verification", "integrity"]
     estimated_duration: "2-5min"
@@ -99,6 +103,8 @@ scripts:
     cmd: "python3"
     args: ["scripts/utilities/pcloud_integrity_check.py"]
     cwd: "/opt/apps/pcloud-tools/main"
+    env:
+      PYTHONPATH: "/opt/apps/pcloud-tools/main"
     category: "Verification"
     tags: ["backup", "integrity", "verification"]
     estimated_duration: "5-15min"
@@ -123,6 +129,8 @@ scripts:
     cmd: "python3"
     args: ["scripts/utilities/pcloud_verify_index_vs_manifests.py"]
     cwd: "/opt/apps/pcloud-tools/main"
+    env:
+      PYTHONPATH: "/opt/apps/pcloud-tools/main"
     category: "Verification"
     tags: ["backup", "verification", "index"]
     estimated_duration: "2-5min"
@@ -147,6 +155,8 @@ scripts:
     cmd: "python3"
     args: ["scripts/analyze_manifest_duplicates.py"]
     cwd: "/opt/apps/pcloud-tools/main"
+    env:
+      PYTHONPATH: "/opt/apps/pcloud-tools/main"
     category: "Analysis"
     tags: ["backup", "analysis", "duplicates"]
     estimated_duration: "5-20min"
