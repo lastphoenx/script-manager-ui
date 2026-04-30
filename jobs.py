@@ -119,11 +119,17 @@ class JobManager:
             if script.env_file:
                 env_file_path = Path(script.cwd) / script.env_file
                 if env_file_path.exists():
-                    env.update(self._load_env_file(str(env_file_path)))
+                    env_vars = self._load_env_file(str(env_file_path))
+                    # Special handling for PATH: append instead of replace
+                    if 'PATH' in env_vars:
+                        env_vars['PATH'] = f"{env_vars['PATH']}:{env.get('PATH', '')}"
+                    env.update(env_vars)
                 else:
                     logger.warning(f"env_file not found: {env_file_path}")
             
-            # Add inline env
+            # Add inline env (also with PATH append logic)
+            if 'PATH' in script.env:
+                script.env['PATH'] = f"{script.env['PATH']}:{env.get('PATH', '')}"
             env.update(script.env)
             
             # Create log file
