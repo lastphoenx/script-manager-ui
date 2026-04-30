@@ -8,7 +8,7 @@ Type=simple
 User=thomas
 Group=thomas
 WorkingDirectory=/opt/apps/script-manager-ui
-Environment="PATH=/opt/apps/script-manager-ui/venv/bin"
+Environment="PATH=/opt/apps/script-manager-ui/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 ExecStart=/opt/apps/script-manager-ui/venv/bin/python main.py
 Restart=always
 RestartSec=5
