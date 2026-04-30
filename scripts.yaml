@@ -77,21 +77,17 @@ scripts:
     estimated_duration: "5-30min"
     risk_level: "high"
     params:
-      - name: dry_run
+      - name: check-only
         type: bool
-        label: "Dry Run (Simulation)"
-        help: "Führt nur Simulation aus, keine echten Änderungen"
+        label: "Check-Only (Dry Run)"
+        help: "Nutzt --check-only: nur Änderungsprüfung, kein Lock, kein Backup"
         default: true
-      
-      - name: source
-        type: path
-        label: "Quellverzeichnis"
-        required: true
-      
-      - name: destination
-        type: path
-        label: "Zielverzeichnis"
-        required: true
+
+      - name: force
+        type: bool
+        label: "Force Backup"
+        help: "Überspringt Safety-Gate und erzwungenen Lauf via --force"
+        default: false
 
   # ==================== VERIFICATION & INTEGRITY ====================
   
