@@ -153,7 +153,7 @@ scripts:
   - name: "Duplikate Analyse"
     description: "Sucht identische Dateien im Backup-Manifest (Excel-Export)"
     cmd: "python3"
-    args: ["scripts/analyze_manifest_duplicates.py"]
+    args: ["scripts/utilities/analyze_manifest_duplicates.py"]
     cwd: "/opt/apps/pcloud-tools/main"
     env:
       PYTHONPATH: "/opt/apps/pcloud-tools/main"
