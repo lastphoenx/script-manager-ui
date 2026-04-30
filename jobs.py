@@ -150,6 +150,12 @@ class JobManager:
                 log_fp.write(f"Command: {' '.join(cmd)}\n")
                 log_fp.write(f"CWD: {script.cwd}\n")
                 log_fp.write(f"Parameters: {json.dumps(parameters, indent=2)}\n")
+                log_fp.write(f"Environment Variables:\n")
+                log_fp.write(f"  PATH: {env.get('PATH', 'NOT SET')}\n")
+                log_fp.write(f"  PYTHONPATH: {env.get('PYTHONPATH', 'NOT SET')}\n")
+                log_fp.write("=" * 70 + "\n\n")
+                log_fp.write(f"CWD: {script.cwd}\n")
+                log_fp.write(f"Parameters: {json.dumps(parameters, indent=2)}\n")
                 log_fp.write("=" * 70 + "\n\n")
             
             # Start process with separate file handle (stays open for subprocess)
