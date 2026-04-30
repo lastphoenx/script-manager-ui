@@ -47,7 +47,7 @@ scripts:
         type: path
         label: "Restore-Zielverzeichnis"
         help: "Lokaler Pfad wo wiederhergestellt wird"
-        default: "/srv/restore"
+        default: "/srv/nas/restore"
         required: true
       
       - name: download
