@@ -162,7 +162,7 @@ scripts:
     estimated_duration: "5-20min"
     risk_level: "low"
     params:
-      - name: manifest_path
+      - name: manifest
         type: path
         label: "Manifest JSON"
         help: "Pfad zum content_index.json oder manifest.json"
