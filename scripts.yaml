@@ -217,8 +217,8 @@ scripts:
       - name: output
         type: path
         label: "Excel-Ausgabe"
-        help: "Pfad zur Excel-Datei"
-        default: "/tmp/duplicates.xlsx"
+        help: "Pfad zur Excel-Datei (SMB-erreichbar z.B. unter /srv/nas/restore)"
+        default: "/srv/nas/restore/duplicates.xlsx"
         required: true
 
   # ==================== SECURITY (EntropyWatcher) ====================
