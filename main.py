@@ -5,6 +5,7 @@ import logging
 import asyncio
 from typing import Optional, List, Dict, Any
 from datetime import datetime
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Header, BackgroundTasks, Request
 from fastapi.responses import JSONResponse, FileResponse
@@ -23,11 +24,44 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
+# === Lifespan Management ===
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage application startup and shutdown."""
+    # Startup
+    logger.info("Starting Script Manager UI")
+    
+    # Ensure database schema exists
+    try:
+        ensure_db_schema()
+    except Exception as e:
+        logger.error(f"Database initialization failed: {e}")
+        logger.error("Please run init_db.sql to create the schema")
+    
+    # Start background job monitor
+    monitor_task = asyncio.create_task(background_job_monitor())
+    
+    logger.info("Script Manager UI started successfully")
+    
+    yield
+    
+    # Shutdown
+    logger.info("Shutting down Script Manager UI")
+    monitor_task.cancel()
+    try:
+        await monitor_task
+    except asyncio.CancelledError:
+        pass
+
+
 # FastAPI app
 app = FastAPI(
     title=settings.APP_TITLE,
     version=settings.APP_VERSION,
-    description="Web UI for managing and executing scripts"
+    description="Web UI for managing and executing scripts",
+    lifespan=lifespan
 )
 
 # CORS for development
@@ -100,32 +134,6 @@ async def background_job_monitor():
         except Exception as e:
             logger.error(f"Background monitor error: {e}")
             await asyncio.sleep(5)
-
-
-# === Startup/Shutdown ===
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize app on startup."""
-    logger.info("Starting Script Manager UI")
-    
-    # Ensure database schema exists
-    try:
-        ensure_db_schema()
-    except Exception as e:
-        logger.error(f"Database initialization failed: {e}")
-        logger.error("Please run init_db.sql to create the schema")
-    
-    # Start background job monitor
-    asyncio.create_task(background_job_monitor())
-    
-    logger.info("Script Manager UI started successfully")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup on shutdown."""
-    logger.info("Shutting down Script Manager UI")
 
 
 # === API Endpoints ===
