@@ -211,7 +211,7 @@ scripts:
       - name: manifest
         type: path
         label: "Manifest JSON"
-        help: "Pfad zum content_index.json oder manifest.json"
+        help: "Pfad zu einer Manifest-Datei ODER zu einem Manifest-Ordner (neueste .json wird verwendet)"
         required: true
       
       - name: output
