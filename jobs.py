@@ -155,7 +155,7 @@ class JobManager:
                 status="running",
                 pid=proc.pid,
                 start_time=datetime.now(),
-                log_file=str(log_file.relative_to(settings.BASE_DIR))
+                log_file=str(log_file)
             )
             
             # Track running job
@@ -261,7 +261,7 @@ class JobManager:
         if not log_file:
             return {"output": "", "size": 0, "offset": 0}
         
-        log_path = settings.BASE_DIR / log_file
+        log_path = Path(log_file)
         
         if not log_path.exists():
             return {"output": "", "size": 0, "offset": 0}
