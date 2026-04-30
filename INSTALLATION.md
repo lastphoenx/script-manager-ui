@@ -225,7 +225,7 @@ RestartSec=5
 # Security
 NoNewPrivileges=true
 PrivateTmp=true
-ProtectSystem=strict
+ProtectSystem=no
 ProtectHome=true
 ReadWritePaths=/var/log/script-manager-ui /srv /srv/nas /srv/nas/restore
 
