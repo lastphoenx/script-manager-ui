@@ -9,7 +9,7 @@ User=thomas
 Group=thomas
 WorkingDirectory=/opt/apps/script-manager-ui
 Environment="PATH=/opt/apps/script-manager-ui/venv/bin"
-ExecStart=/opt/apps/script-manager-ui/venv/bin/uvicorn main:app --host 127.0.0.1 --port 8000
+ExecStart=/opt/apps/script-manager-ui/venv/bin/python main.py
 Restart=always
 RestartSec=5
 
