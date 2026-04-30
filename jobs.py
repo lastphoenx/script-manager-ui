@@ -115,9 +115,13 @@ class JobManager:
             # Prepare environment
             env = os.environ.copy()
             
-            # Load env_file if specified
-            if script.env_file and Path(script.env_file).exists():
-                env.update(self._load_env_file(script.env_file))
+            # Load env_file if specified (relative to script.cwd)
+            if script.env_file:
+                env_file_path = Path(script.cwd) / script.env_file
+                if env_file_path.exists():
+                    env.update(self._load_env_file(str(env_file_path)))
+                else:
+                    logger.warning(f"env_file not found: {env_file_path}")
             
             # Add inline env
             env.update(script.env)
