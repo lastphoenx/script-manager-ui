@@ -14,7 +14,7 @@ Restart=always
 RestartSec=5
 
 # Security hardening
-NoNewPrivileges=true
+NoNewPrivileges=false
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true

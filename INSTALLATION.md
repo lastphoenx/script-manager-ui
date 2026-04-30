@@ -223,7 +223,7 @@ Restart=always
 RestartSec=5
 
 # Security
-NoNewPrivileges=true
+NoNewPrivileges=false
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
