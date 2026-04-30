@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     # Paths
     BASE_DIR: Path = Path(__file__).parent
     SCRIPTS_YAML: Path = BASE_DIR / "scripts.yaml"
-    LOGS_DIR: Path = BASE_DIR / "logs"
+    LOGS_DIR: Path = Path("/var/log/script-manager-ui")  # Production: /var/log/script-manager-ui, Dev: ./logs
     
     # Authentik Forward Auth
     AUTHENTIK_HEADER: str = "X-Authentik-Username"
