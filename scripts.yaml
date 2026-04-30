@@ -51,14 +51,14 @@ scripts:
         required: true
       
       - name: download
-        type: boolean
+        type: bool
         label: "Wirklich downloaden?"
         help: "false = nur Plan anzeigen, true = tatsächlich downloaden"
         default: true
         required: false
       
       - name: verify
-        type: boolean
+        type: bool
         label: "SHA256-Verifikation?"
         help: "Integrität nach Download prüfen"
         default: true
