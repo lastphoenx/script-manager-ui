@@ -368,7 +368,12 @@ class JobManager:
                     
                     if "=" in line:
                         key, value = line.split("=", 1)
-                        env[key.strip()] = value.strip()
+                        key = key.strip()
+                        value = value.strip()
+                        # Accept quoted .env values: KEY="value" or KEY='value'
+                        if value and len(value) >= 2 and value[0] == value[-1] and value[0] in ('"', "'"):
+                            value = value[1:-1]
+                        env[key] = value
         except Exception as e:
             logger.warning(f"Failed to load env file {env_file}: {e}")
         
