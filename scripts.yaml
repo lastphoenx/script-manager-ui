@@ -8,7 +8,7 @@ scripts:
   - name: "pCloud Restore"
     description: "Einzelne Datei/Ordner aus Backup nach /srv/restore wiederherstellen"
     cmd: "/opt/apps/pcloud-tools/venv/bin/python3"
-    args: ["scripts/utilities/pcloud_restore.py"]
+    args: ["-u", "scripts/utilities/pcloud_restore.py"]
     cwd: "/opt/apps/pcloud-tools/main"
     env:
       PYTHONPATH: "/opt/apps/pcloud-tools:/opt/apps/pcloud-tools/main"
@@ -97,7 +97,7 @@ scripts:
   - name: "pCloud Quick Delta"
     description: "Schnelle Tamper-Detection für pCloud-Backups"
     cmd: "/opt/apps/pcloud-tools/venv/bin/python3"
-    args: ["pcloud_quick_delta.py"]
+    args: ["-u", "pcloud_quick_delta.py"]
     cwd: "/opt/apps/pcloud-tools/main"
     env:
       PYTHONPATH: "/opt/apps/pcloud-tools:/opt/apps/pcloud-tools/main"
@@ -135,7 +135,7 @@ scripts:
   - name: "pCloud Integrity Check"
     description: "Verifiziert Stub-Dateien gegen content_index.json"
     cmd: "/opt/apps/pcloud-tools/venv/bin/python3"
-    args: ["scripts/utilities/pcloud_integrity_check.py"]
+    args: ["-u", "scripts/utilities/pcloud_integrity_check.py"]
     cwd: "/opt/apps/pcloud-tools/main"
     env:
       PYTHONPATH: "/opt/apps/pcloud-tools:/opt/apps/pcloud-tools/main"
@@ -155,20 +155,20 @@ scripts:
         type: int
         label: "Stub-Stichproben pro Snapshot"
         help: "Anzahl Stub-Dateien zu pr\u00fcfen (0 = alle)"
-        default: 100
+        default: 50
         min: 0
       
       - name: checksum_sample
         type: int
         label: "Checksum-Stichproben"
-        help: "Anzahl Index-Checksums zu pr\u00fcfen (0 = alle)"
-        default: 50
+        help: "Anzahl Index-Checksums zu prüfen (0 = alle) - sequenziell, ca. 20-30s pro File!"
+        default: 10
         min: 0
 
   - name: "Verify Index vs Manifests"
     description: "Vergleicht content_index.json mit lokalen JSON-Manifesten"
     cmd: "/opt/apps/pcloud-tools/venv/bin/python3"
-    args: ["scripts/utilities/pcloud_verify_index_vs_manifests.py"]
+    args: ["-u", "scripts/utilities/pcloud_verify_index_vs_manifests.py"]
     cwd: "/opt/apps/pcloud-tools/main"
     env:
       PYTHONPATH: "/opt/apps/pcloud-tools:/opt/apps/pcloud-tools/main"
@@ -194,7 +194,7 @@ scripts:
   - name: "Duplikate Analyse"
     description: "Sucht identische Dateien im Backup-Manifest (Excel-Export)"
     cmd: "/opt/apps/pcloud-tools/venv/bin/python3"
-    args: ["scripts/utilities/analyze_manifest_duplicates.py"]
+    args: ["-u", "scripts/utilities/analyze_manifest_duplicates.py"]
     cwd: "/opt/apps/pcloud-tools/main"
     env:
       PYTHONPATH: "/opt/apps/pcloud-tools:/opt/apps/pcloud-tools/main"
