@@ -10,6 +10,7 @@ scripts:
     cmd: "/opt/apps/pcloud-tools/venv/bin/python3"
     args: ["-u", "scripts/utilities/pcloud_restore.py"]
     cwd: "/opt/apps/pcloud-tools/main"
+    env_file: ".env"
     env:
       PYTHONPATH: "/opt/apps/pcloud-tools:/opt/apps/pcloud-tools/main"
     category: "Recovery"
@@ -99,6 +100,7 @@ scripts:
     cmd: "/opt/apps/pcloud-tools/venv/bin/python3"
     args: ["-u", "pcloud_quick_delta.py"]
     cwd: "/opt/apps/pcloud-tools/main"
+    env_file: ".env"
     env:
       PYTHONPATH: "/opt/apps/pcloud-tools:/opt/apps/pcloud-tools/main"
     category: "Verification"
@@ -137,6 +139,7 @@ scripts:
     cmd: "/opt/apps/pcloud-tools/venv/bin/python3"
     args: ["-u", "scripts/utilities/pcloud_integrity_check.py"]
     cwd: "/opt/apps/pcloud-tools/main"
+    env_file: ".env"
     env:
       PYTHONPATH: "/opt/apps/pcloud-tools:/opt/apps/pcloud-tools/main"
     category: "Verification"
@@ -170,6 +173,7 @@ scripts:
     cmd: "/opt/apps/pcloud-tools/venv/bin/python3"
     args: ["-u", "scripts/utilities/pcloud_verify_index_vs_manifests.py"]
     cwd: "/opt/apps/pcloud-tools/main"
+    env_file: ".env"
     env:
       PYTHONPATH: "/opt/apps/pcloud-tools:/opt/apps/pcloud-tools/main"
     category: "Verification"
@@ -196,6 +200,7 @@ scripts:
     cmd: "/opt/apps/pcloud-tools/venv/bin/python3"
     args: ["-u", "scripts/utilities/analyze_manifest_duplicates.py"]
     cwd: "/opt/apps/pcloud-tools/main"
+    env_file: ".env"
     env:
       PYTHONPATH: "/opt/apps/pcloud-tools:/opt/apps/pcloud-tools/main"
     category: "Analysis"
