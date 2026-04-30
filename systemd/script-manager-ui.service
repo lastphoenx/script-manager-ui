@@ -5,8 +5,8 @@ Requires=mariadb.service
 
 [Service]
 Type=simple
-User=thomas
-Group=thomas
+User=root
+Group=root
 WorkingDirectory=/opt/apps/script-manager-ui
 Environment="PATH=/opt/apps/script-manager-ui/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 ExecStart=/opt/apps/script-manager-ui/venv/bin/python main.py
