@@ -268,6 +268,55 @@
                 console.error('Failed to load script details:', error);
             }
         }
+
+        function setupExclusiveCheckboxGroups(script) {
+            if (!script || !script.params) return;
+
+            const groups = {};
+            script.params.forEach(param => {
+                if (param.type === 'bool' && param.exclusive_group) {
+                    if (!groups[param.exclusive_group]) groups[param.exclusive_group] = [];
+                    groups[param.exclusive_group].push(param);
+                }
+            });
+
+            Object.keys(groups).forEach(groupName => {
+                const groupParams = groups[groupName];
+                const checkboxes = groupParams
+                    .map(param => document.getElementById(`param_${param.name}`))
+                    .filter(Boolean);
+
+                if (checkboxes.length < 2) return;
+
+                const enforceOne = groupParams.some(param => param.enforce_one_in_group === true);
+
+                const checkedBoxes = checkboxes.filter(box => box.checked);
+                if (checkedBoxes.length === 0 && enforceOne) {
+                    const defaultParam = groupParams.find(param => param.default === true);
+                    const defaultBox = defaultParam ? document.getElementById(`param_${defaultParam.name}`) : checkboxes[0];
+                    if (defaultBox) defaultBox.checked = true;
+                } else if (checkedBoxes.length > 1) {
+                    checkedBoxes.slice(1).forEach(box => {
+                        box.checked = false;
+                    });
+                }
+
+                checkboxes.forEach(box => {
+                    box.addEventListener('change', () => {
+                        if (box.checked) {
+                            checkboxes.forEach(other => {
+                                if (other !== box) other.checked = false;
+                            });
+                            return;
+                        }
+
+                        if (enforceOne && !checkboxes.some(item => item.checked)) {
+                            box.checked = true;
+                        }
+                    });
+                });
+            });
+        }
         
         function renderScriptDetails(script) {
             const riskColor = {
@@ -312,6 +361,7 @@
             `;
             
             document.getElementById('scriptDetails').innerHTML = html;
+            setupExclusiveCheckboxGroups(script);
         }
         
         function renderParameter(param) {
@@ -390,8 +440,32 @@
             const form = event.target;
             const formData = new FormData(form);
             const parameters = {};
+
+            const conditionalRequirements = currentScript.params.filter(
+                param => param.type === 'bool' && param.required_if_param_true
+            );
+
+            for (const param of conditionalRequirements) {
+                const requiredByName = param.required_if_param_true;
+                const requiredByElement = form.elements[requiredByName];
+                const currentElement = form.elements[param.name];
+
+                if (
+                    requiredByElement &&
+                    currentElement &&
+                    requiredByElement.checked &&
+                    !currentElement.checked
+                ) {
+                    alert(param.required_if_message || `${param.label} muss aktiviert sein.`);
+                    return;
+                }
+            }
             
             currentScript.params.forEach(param => {
+                if (param.ui_only) {
+                    return;
+                }
+
                 const value = formData.get(param.name);
                 
                 if (param.type === 'bool') {

@@ -332,6 +332,9 @@ class JobManager:
         for param_def in script.params:
             param_name = param_def["name"]
             param_type = param_def["type"]
+            if param_def.get("ui_only"):
+                continue
+
             value = parameters.get(param_name)
             
             # Skip if not provided and not required
@@ -349,6 +352,10 @@ class JobManager:
                 # Boolean flags (only append if True)
                 cmd.append(f"--{param_name}")
             else:
+                if param_def.get("arg_mode") == "positional":
+                    cmd.append(str(value))
+                    continue
+
                 # Convert underscores to hyphens for CLI compatibility (Python convention)
                 cli_param = param_name.replace("_", "-")
                 cmd.append(f"--{cli_param}")
