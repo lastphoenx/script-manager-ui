@@ -146,38 +146,65 @@ scripts:
       - name: current
         type: path
         label: "Aktuelles Manifest"
-        default: "/srv/pcloud-archive/manifests/2026-05-01-120000.json"
+        default: "/srv/pcloud-archive/manifests/2026-05-01-103649.json"
         required: true
 
       - name: basis
         type: path
         label: "Basis-Manifest"
-        default: "/srv/pcloud-archive/manifests/2026-05-01-103649.json"
+        default: "/srv/pcloud-archive/manifests/2026-04-27-173201.json"
         required: true
+
+      - name: auto
+        type: bool
+        label: "Auto-Modus (empfohlen)"
+        help: "Ermittelt source_snapshots und stub_ratio aus realen Daten"
+        default: true
+
+      - name: index
+        type: path
+        label: "Index-Datei"
+        help: "Master-Index für Auto-Stub-Ratio"
+        default: "/srv/pcloud-archive/indexes/content_index_master.json"
+        required: false
+
+      - name: manifests-dir
+        type: path
+        label: "Manifest-Verzeichnis"
+        help: "Auto-Zählung der Snapshots"
+        default: "/srv/pcloud-archive/manifests"
+        required: false
+
+      - name: template-dir
+        type: path
+        label: "Template-Basisverzeichnis"
+        help: "Prüft auf _template Unterordner"
+        default: "/Backup/rtb_1to1"
+        required: false
 
       - name: source-snapshots
         type: int
-        label: "Source Snapshots"
-        default: 2
+        label: "Source Snapshots (manuell, optional)"
+        help: "Nur setzen wenn Auto-Modus aus ist"
         min: 1
 
       - name: stub-ratio
         type: string
-        label: "Stub Ratio"
-        help: "z.B. 0.92"
-        default: "0.92"
-        required: true
+        label: "Stub Ratio (manuell, optional)"
+        help: "Nur setzen wenn Auto-Modus aus ist, z.B. 0.92"
+        required: false
 
       - name: template-exists
         type: bool
-        label: "Template vorhanden"
-        default: true
+        label: "Template vorhanden (manuell, optional)"
+        help: "Nur setzen wenn Auto-Modus aus ist"
+        default: false
 
       - name: template-match
         type: string
-        label: "Template Match"
-        help: "z.B. 0.97"
-        default: "0.97"
+        label: "Template Match (manuell, optional)"
+        help: "Nur setzen wenn Auto-Modus aus ist, z.B. 0.97"
+        required: false
 
   # ==================== BACKUP ====================
   
