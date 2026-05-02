@@ -65,6 +65,120 @@ scripts:
         default: true
         required: false
 
+  - name: "Prepare Fresh Test"
+    description: "Bereitet lokalen Testzustand vor (Snapshot behalten, Cleanup)"
+    cmd: "sudo"
+    args: ["bash", "/opt/apps/pcloud-tools/main/scripts/utilities/prepare_fresh_test.sh"]
+    cwd: "/opt/apps/pcloud-tools/main"
+    category: "Recovery"
+    tags: ["pcloud", "test", "cleanup", "high-risk"]
+    estimated_duration: "1-3min"
+    risk_level: "high"
+    params:
+      - name: keep-snapshot
+        type: string
+        label: "Snapshot behalten"
+        help: "Nur dieser Snapshot bleibt lokal erhalten"
+        default: "2026-04-27-173201"
+        required: true
+
+      - name: keep-local-manifest
+        type: select
+        label: "Lokales Manifest behalten"
+        help: "yes = Keep-Manifest bleibt erhalten"
+        options: ["yes", "no"]
+        default: "yes"
+        required: true
+
+      - name: highrisk
+        type: bool
+        label: "HIGH RISK bestätigt"
+        help: "Pflicht bei --execute: destruktive Änderungen wurden bewusst bestätigt"
+        default: false
+        ui_only: true
+        required_if_param_true: "execute"
+        required_if_message: "Für --execute bitte zuerst HIGH RISK bestätigen."
+
+      - name: dry-run
+        type: bool
+        label: "--dry-run"
+        help: "Sicherer Standardmodus: zeigt nur geplante Änderungen"
+        default: true
+        exclusive_group: "prepare_fresh_test_mode"
+        enforce_one_in_group: true
+
+      - name: execute
+        type: bool
+        label: "--execute"
+        help: "Führt die Änderungen wirklich aus (destruktiv)"
+        default: false
+        exclusive_group: "prepare_fresh_test_mode"
+        enforce_one_in_group: true
+
+  - name: "pCloud File History"
+    description: "Historie einer Datei über lokale Manifeste nachverfolgen"
+    cmd: "/bin/bash"
+    args: ["/opt/apps/pcloud-tools/main/scripts/utilities/pcloud_file_history.sh"]
+    cwd: "/opt/apps/pcloud-tools/main"
+    category: "Analysis"
+    tags: ["pcloud", "history", "manifest"]
+    estimated_duration: "<1min"
+    risk_level: "low"
+    params:
+      - name: target
+        type: string
+        label: "Datei-Pfad im Backup"
+        help: "Beispielpfad ist sofort ausführbar"
+        default: "/Backup/rtb_1to1/_snapshots/2026-04-27-173201/Thomas/Ausbildung/2018-03-0520-17-02_Kursbestätigung_Arbeitorganisation_&_Zeitmanagement.pdf"
+        required: true
+        arg_mode: positional
+
+  - name: "Smart Strategy Decision Simulator"
+    description: "Offline-Simulation der Smart-Strategy Entscheidung"
+    cmd: "/opt/apps/pcloud-tools/venv/bin/python3"
+    args: ["-u", "/opt/apps/pcloud-tools/main/scripts/utilities/smart_strategy_decision_simulator.py"]
+    cwd: "/opt/apps/pcloud-tools/main"
+    category: "Analysis"
+    tags: ["pcloud", "smart-strategy", "simulation"]
+    estimated_duration: "<1min"
+    risk_level: "low"
+    params:
+      - name: current
+        type: path
+        label: "Aktuelles Manifest"
+        default: "/srv/pcloud-archive/manifests/2026-05-01-120000.json"
+        required: true
+
+      - name: basis
+        type: path
+        label: "Basis-Manifest"
+        default: "/srv/pcloud-archive/manifests/2026-05-01-103649.json"
+        required: true
+
+      - name: source-snapshots
+        type: int
+        label: "Source Snapshots"
+        default: 2
+        min: 1
+
+      - name: stub-ratio
+        type: string
+        label: "Stub Ratio"
+        help: "z.B. 0.92"
+        default: "0.92"
+        required: true
+
+      - name: template-exists
+        type: bool
+        label: "Template vorhanden"
+        default: true
+
+      - name: template-match
+        type: string
+        label: "Template Match"
+        help: "z.B. 0.97"
+        default: "0.97"
+
   # ==================== BACKUP ====================
   
   - name: "RTB Backup"
