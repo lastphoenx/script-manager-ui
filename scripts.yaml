@@ -90,6 +90,22 @@ scripts:
         default: "yes"
         required: true
 
+      - name: auto-remote-cleanup
+        type: select
+        label: "Auto: pCloud Remote-Cleanup"
+        help: "yes = Remote-Snapshots/Index automatisch bereinigen; no = manuell"
+        options: ["yes", "no"]
+        default: "yes"
+        required: true
+
+      - name: auto-db-cleanup
+        type: select
+        label: "Auto: DB-Cleanup"
+        help: "yes = DB-Run-History automatisch bereinigen; no = manuell"
+        options: ["yes", "no"]
+        default: "yes"
+        required: true
+
       - name: highrisk
         type: bool
         label: "HIGH RISK bestätigt"
