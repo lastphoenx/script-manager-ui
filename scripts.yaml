@@ -246,6 +246,87 @@ scripts:
         help: "Überspringt Safety-Gate und erzwungenen Lauf via --force"
         default: false
 
+  - name: "pCloud Simple Upload"
+    description: "Ad-hoc Upload von Datei/Ordner nach pCloud (parallel, mit optionalem Delta-Check)"
+    cmd: "/opt/apps/pcloud-tools/venv/bin/python3"
+    args: ["-u", "pcloud_simple_upload.py"]
+    cwd: "/opt/apps/pcloud-tools/main"
+    env_file: ".env"
+    env:
+      PYTHONPATH: "/opt/apps/pcloud-tools:/opt/apps/pcloud-tools/main"
+    category: "Backup"
+    tags: ["pcloud", "upload", "adhoc"]
+    estimated_duration: "1-30min"
+    risk_level: "medium"
+    params:
+      - name: env-file
+        type: path
+        label: ".env Datei"
+        help: "Pfad zur .env mit PCLOUD_TOKEN/API-Config"
+        default: "/opt/apps/pcloud-tools/main/.env"
+        required: true
+
+      - name: source
+        type: path
+        label: "Quelle (lokal)"
+        help: "Datei oder Ordner, der hochgeladen werden soll"
+        required: true
+
+      - name: destination
+        type: string
+        label: "Ziel (pCloud)"
+        help: "pCloud Zielordner, z.B. /Backup/rtb_1to1/_adhoc/"
+        default: "/Backup/rtb_1to1/_adhoc/"
+        required: true
+
+      - name: no-delta-check
+        type: bool
+        label: "Delta-Check überspringen"
+        help: "Aktiviert --no-delta-check"
+        default: false
+
+      - name: no-auto-download
+        type: bool
+        label: "Kein Auto-Download pcloud_bin_lib.py"
+        help: "Aktiviert --no-auto-download"
+        default: false
+
+      - name: lib-path
+        type: path
+        label: "Custom pcloud_bin_lib.py (optional)"
+        help: "Nur nötig bei Sonder-Setups"
+        required: false
+
+  - name: "microSD Raw Image Backup (dd)"
+    description: "Erstellt ein 1:1 Raw-Image der microSD nach /mnt/backup (destruktiv bei falschem Device)"
+    cmd: "sudo"
+    args:
+      - "bash"
+      - "-lc"
+      - "OUT_PATH=\"$1\"; if [ -z \"$OUT_PATH\" ]; then OUT_PATH=\"/mnt/backup/rpi5-Radxa_SATA_HAT_microsd-live-backup-$(date +%Y%m%d-%H%M%S).img\"; fi; OUT_PATH=\"${OUT_PATH/AUTO_TIMESTAMP/$(date +%Y%m%d-%H%M%S)}\"; dd if=/dev/mmcblk0 of=\"$OUT_PATH\" bs=4M status=progress conv=fsync"
+      - "_"
+    cwd: "/opt/apps"
+    category: "Backup"
+    tags: ["backup", "image", "dd", "high-risk"]
+    estimated_duration: "10-60min"
+    risk_level: "high"
+    params:
+      - name: output-path
+        type: path
+        label: "Output Image Pfad"
+        help: "Default-Vorschlag: /mnt/backup/rpi5-Radxa_SATA_HAT_microsd-live-backup-AUTO_TIMESTAMP.img"
+        default: "/mnt/backup/rpi5-Radxa_SATA_HAT_microsd-live-backup-AUTO_TIMESTAMP.img"
+        required: false
+        arg_mode: positional
+
+      - name: highrisk
+        type: bool
+        label: "HIGH RISK bestätigt"
+        help: "Pflicht: dd liest raw vom Blockdevice; if/of müssen korrekt sein"
+        default: false
+        ui_only: true
+        required: true
+
   # ==================== VERIFICATION & INTEGRITY ====================
   
   - name: "pCloud Quick Delta"
