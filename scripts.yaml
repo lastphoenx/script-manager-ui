@@ -65,6 +65,40 @@ scripts:
         default: true
         required: false
 
+      - name: list-snapshots
+        type: bool
+        label: "Snapshots auflisten"
+        help: "Listet verfügbare Snapshots und beendet"
+        default: false
+        required: false
+
+      - name: mode
+        type: select
+        label: "Restore-Modus"
+        help: "flat = lokales Verzeichnis; object-store = Objekt-Speicher"
+        options: ["flat", "object-store"]
+        default: "flat"
+        required: false
+
+      - name: verify-only
+        type: bool
+        label: "Nur verifizieren"
+        help: "Prüft geplante Downloads ohne Extraktion"
+        default: false
+        required: false
+
+      - name: folderid
+        type: int
+        label: "pCloud Folder-ID (optional)"
+        help: "Direktzugriff per Folder-ID statt Pfad"
+        required: false
+
+      - name: fileid
+        type: int
+        label: "pCloud File-ID (optional)"
+        help: "Direktzugriff per File-ID statt Pfad"
+        required: false
+
   - name: "Prepare Fresh Test"
     description: "Bereitet lokalen Testzustand vor (Snapshot behalten, Cleanup)"
     cmd: "sudo"
@@ -222,6 +256,36 @@ scripts:
         help: "Nur setzen wenn Auto-Modus aus ist, z.B. 0.97"
         required: false
 
+      - name: stub-transform-threshold
+        type: string
+        label: "Stub-Transform Schwellenwert (optional)"
+        help: "Überschreibt den Schwellenwert für Stub-Transformation, z.B. 0.90"
+        required: false
+
+      - name: saved-calls-min
+        type: int
+        label: "Min. gespeicherte API-Calls (optional)"
+        help: "Mindestzahl der eingesparten API-Calls für Smart-Strategie"
+        required: false
+
+      - name: template-strong-threshold
+        type: string
+        label: "Template-Strong Schwellenwert (optional)"
+        help: "Überschreibt den starken Template-Match-Schwellenwert, z.B. 0.97"
+        required: false
+
+      - name: json-out
+        type: path
+        label: "JSON Ausgabe (optional)"
+        help: "Simulationsergebnis als JSON-Datei speichern"
+        required: false
+
+      - name: json-only
+        type: bool
+        label: "Nur JSON-Ausgabe"
+        help: "Unterdrückt menschenlesbare Ausgabe"
+        default: false
+
   # ==================== BACKUP ====================
   
   - name: "RTB Backup"
@@ -245,6 +309,12 @@ scripts:
         label: "Force Backup"
         help: "Überspringt Safety-Gate und erzwungenen Lauf via --force"
         default: false
+
+      - name: upload-only
+        type: path
+        label: "Upload-Only: Snapshot-Pfad (optional)"
+        help: "Direkt-Upload eines bestehenden Snapshots nach pCloud ohne neues RTB-Backup"
+        required: false
 
   - name: "pCloud Simple Upload"
     description: "Ad-hoc Upload von Datei/Ordner nach pCloud (parallel, mit optionalem Delta-Check)"
@@ -368,6 +438,25 @@ scripts:
         help: "Optional: Report als JSON speichern"
         required: false
 
+      - name: backfill-sample
+        type: int
+        label: "Backfill-Stichproben"
+        help: "Anzahl Dateien für SHA-Backfill (0 = deaktiviert)"
+        default: 0
+        min: 0
+
+      - name: env-file
+        type: path
+        label: ".env Datei (optional)"
+        help: "Überschreibt die Standard-.env"
+        required: false
+
+      - name: profile
+        type: string
+        label: "Profil (optional)"
+        help: "Konfig-Profil für pCloud-Verbindung"
+        required: false
+
   - name: "pCloud Integrity Check"
     description: "Verifiziert Stub-Dateien gegen content_index.json"
     cmd: "/opt/apps/pcloud-tools/venv/bin/python3"
@@ -402,6 +491,44 @@ scripts:
         default: 10
         min: 0
 
+      - name: json-out
+        type: path
+        label: "JSON Report Ausgabe (optional)"
+        help: "Speichert Ergebnis als JSON"
+        required: false
+
+      - name: stubs-mode
+        type: select
+        label: "Stubs-Modus"
+        help: "Wie werden Stub-Dateien verarbeitet"
+        options: ["separate", "combined", "both"]
+        default: "separate"
+
+      - name: level
+        type: select
+        label: "Prüf-Level"
+        help: "FAST = nur Metadaten; FILEID = ID-Match; SHA = voller Checksum"
+        options: ["FAST", "FILEID", "SHA"]
+        default: "FILEID"
+
+      - name: dry-run
+        type: bool
+        label: "Dry-Run"
+        help: "Zeigt Probleme ohne Korrekturen"
+        default: true
+        exclusive_group: "integrity_mode"
+        enforce_one_in_group: true
+
+      - name: autofix-safe
+        type: bool
+        label: "AutoFix (nur sichere Fixes)"
+        help: "Behebt nur sichere Probleme automatisch (kein Datenverlust möglich)"
+        default: false
+        exclusive_group: "integrity_mode"
+        enforce_one_in_group: true
+        ui_only: true
+        required_if_message: "AutoFix: bitte HIGH-RISK-Implikationen prüfen."
+
   - name: "Verify Index vs Manifests"
     description: "Vergleicht content_index.json mit lokalen JSON-Manifesten"
     cmd: "/opt/apps/pcloud-tools/venv/bin/python3"
@@ -426,6 +553,31 @@ scripts:
         label: "Lokale Manifest-Verzeichnis"
         help: "Wo liegen die lokalen .json Manifeste?"
         required: true
+
+      - name: index-file
+        type: string
+        label: "Index-Datei"
+        help: "Name der Index-Datei (Standard: content_index.json)"
+        default: "content_index.json"
+        required: false
+
+      - name: env-file
+        type: path
+        label: ".env Datei (optional)"
+        help: "Überschreibt die Standard-.env"
+        required: false
+
+      - name: profile
+        type: string
+        label: "Profil (optional)"
+        help: "Konfig-Profil für pCloud-Verbindung"
+        required: false
+
+      - name: json-out
+        type: path
+        label: "JSON Report Ausgabe (optional)"
+        help: "Speichert Ergebnis als JSON"
+        required: false
 
   # ==================== ANALYSIS ====================
   
@@ -478,6 +630,18 @@ scripts:
     tags: ["entropy", "forecast", "scheduling"]
     estimated_duration: "<1min"
     risk_level: "low"
+    params:
+      - name: format
+        type: select
+        label: "Ausgabe-Format"
+        options: ["compact", "hybrid", "full", "box"]
+        default: "compact"
+
+      - name: sort
+        type: select
+        label: "Sortierung"
+        options: ["next", "last", "name"]
+        default: "next"
 
   - name: "EW Backup Slot Check"
     description: "Prüft ob Backup-Slot verfügbar ist (Kollisionsvermeidung)"
@@ -489,6 +653,13 @@ scripts:
     tags: ["entropy", "backup", "scheduling"]
     estimated_duration: "<1min"
     risk_level: "low"
+    params:
+      - name: offset-days
+        type: int
+        label: "Offset Tage (optional)"
+        help: "Manuelle Verschiebung in Tagen (Standard: auto aus timer)"
+        required: false
+        arg_mode: positional
 
   - name: "Honeyfile Monitor"
     description: "Statusprüfung der Köder-Dateien (Tamper-Detection)"
@@ -515,6 +686,12 @@ scripts:
     tags: ["entropy", "safety-gate", "write-protection"]
     estimated_duration: "<1min"
     risk_level: "low"
+    params:
+      - name: strict
+        type: bool
+        label: "Strict Mode (--strict)"
+        help: "Blockiert auch bei YELLOW-Status"
+        default: false
 
   - name: "Forecast Safety Gate"
     description: "Prognostiziert wann das Safety Gate aktiv sein wird"
@@ -526,6 +703,13 @@ scripts:
     tags: ["entropy", "forecast", "safety-gate"]
     estimated_duration: "<1min"
     risk_level: "low"
+    params:
+      - name: offset-days
+        type: int
+        label: "Offset Tage (optional)"
+        help: "Manuelle Verschiebung in Tagen"
+        required: false
+        arg_mode: positional
 
   - name: "Safe Ops Repo Sync"
     description: "Synchronisiert alle Repositories via safe-ops-cli"
