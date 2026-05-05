@@ -536,6 +536,18 @@ scripts:
     tags: ["safe-ops", "git", "sync", "maintenance"]
     estimated_duration: "1-10min"
     risk_level: "medium"
+    params:
+      - name: status
+        type: bool
+        label: "Nur Status anzeigen (--status)"
+        help: "Keine Aenderungen, nur Upstream/Local-Status anzeigen"
+        default: true
+
+      - name: dry-run
+        type: bool
+        label: "Testlauf ohne Pull (--dry-run)"
+        help: "Zeigt an, was gepullt wuerde, ohne Aenderungen"
+        default: false
 
   - name: "EW Graceful Shutdown"
     description: "Faehrt EntropyWatcher-Dienste kontrolliert herunter"
@@ -546,6 +558,26 @@ scripts:
     tags: ["entropy", "shutdown", "maintenance", "high-risk"]
     estimated_duration: "<1min"
     risk_level: "high"
+    params:
+      - name: timeout
+        type: int
+        label: "Timeout pro Service (Sekunden)"
+        help: "Default 1800 (30min); maximale Wartezeit pro Service"
+        default: 1800
+        min: 30
+        max: 7200
+
+      - name: dry-run
+        type: bool
+        label: "Dry-Run (--dry-run)"
+        help: "Nur pruefen/warten, kein Shutdown"
+        default: true
+
+      - name: no-shutdown
+        type: bool
+        label: "Nicht herunterfahren (--no-shutdown)"
+        help: "Wartet auf Dienste, fuehrt aber keinen Shutdown aus"
+        default: false
 
   - name: "EW Service Check"
     description: "Prueft den Status relevanter EntropyWatcher-Services"
