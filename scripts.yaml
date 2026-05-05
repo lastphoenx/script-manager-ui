@@ -527,6 +527,36 @@ scripts:
     estimated_duration: "<1min"
     risk_level: "low"
 
+  - name: "Safe Ops Repo Sync"
+    description: "Synchronisiert alle Repositories via safe-ops-cli"
+    cmd: "sudo"
+    args: ["-u", "thomas", "bash", "/opt/apps/safe-ops-cli/main/tools/sync_repos.sh"]
+    cwd: "/opt/apps/safe-ops-cli/main"
+    category: "Security"
+    tags: ["safe-ops", "git", "sync", "maintenance"]
+    estimated_duration: "1-10min"
+    risk_level: "medium"
+
+  - name: "EW Graceful Shutdown"
+    description: "Faehrt EntropyWatcher-Dienste kontrolliert herunter"
+    cmd: "sudo"
+    args: ["/opt/apps/entropywatcher/main/tools/graceful_shutdown.sh"]
+    cwd: "/opt/apps/entropywatcher/main"
+    category: "Security"
+    tags: ["entropy", "shutdown", "maintenance", "high-risk"]
+    estimated_duration: "<1min"
+    risk_level: "high"
+
+  - name: "EW Service Check"
+    description: "Prueft den Status relevanter EntropyWatcher-Services"
+    cmd: "sudo"
+    args: ["/opt/apps/entropywatcher/main/tools/check_services.sh"]
+    cwd: "/opt/apps/entropywatcher/main"
+    category: "Security"
+    tags: ["entropy", "services", "status", "monitoring"]
+    estimated_duration: "<1min"
+    risk_level: "low"
+
   # ==================== REPORTS ====================
   
   - name: "pCloud Aggregate Status"
