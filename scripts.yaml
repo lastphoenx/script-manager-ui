@@ -759,8 +759,8 @@ scripts:
 
       - name: no-shutdown
         type: bool
-        label: "Nicht herunterfahren (--no-shutdown)"
-        help: "Wartet auf Dienste, fuehrt aber keinen Shutdown aus"
+        label: "Dienste laufen lassen (--no-shutdown)"
+        help: "Stoppt die Timer, wartet bis alle EW-Dienste inaktiv sind – fuehrt aber KEIN 'systemctl stop' aus. Das System bleibt voll hochgefahren, die Dienste laufen weiter."
         default: false
 
   - name: "EW Service Check"
