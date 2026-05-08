@@ -795,6 +795,101 @@ scripts:
     estimated_duration: "2-5min"
     risk_level: "low"
 
+  # ==================== UTILITIES ====================
+
+  - name: "Terminal Cheatsheet"
+    description: "Interaktives Referenz-Cheatsheet für Shell-Befehle (gruppiert, searchbar)"
+    cmd: "python3"
+    args: ["/opt/apps/safe-ops-cli/main/tools/cheatx.py", "show"]
+    cwd: "/opt/apps/safe-ops-cli/main"
+    category: "Utilities"
+    tags: ["reference", "cheatsheet", "shell", "documentation"]
+    estimated_duration: "<1min"
+    risk_level: "low"
+    params:
+      - name: search
+        type: string
+        label: "Suchtext (Regex)"
+        help: "Filtern nach Befehlsname, Beschreibung oder Beispielen"
+        required: false
+
+      - name: groups
+        type: string
+        label: "Gruppen (Kurzformen)"
+        help: "Komma-separiert (dv=Dateien, bv=Benutzer, rv=Rechte, vs=Navigation, sys=System, net=Netz, pkg=Pakete, proc=Prozesse, stor=Storage). Leer=alle"
+        required: false
+        default: ""
+
+      - name: format
+        type: select
+        label: "Ausgabe-Format"
+        options: ["table", "md", "plain"]
+        default: "table"
+
+      - name: examples-lines
+        type: int
+        label: "Beispielzeilen pro Eintrag"
+        help: "Wie viele Beispielzeilen anzeigen (0=keine)"
+        default: 1
+        min: 0
+        max: 5
+
+      - name: compact
+        type: bool
+        label: "Kompaktes Layout"
+        help: "Kürzere Spaltenbreiten"
+        default: false
+
+      - name: per-page
+        type: int
+        label: "Zeilen pro Seite"
+        help: "Für Paginierung"
+        default: 20
+        min: 5
+
+  - name: "Python venv Rotate"
+    description: "Erstellt neue Virtual Environment, verlinkt als 'venv', räumt alte auf"
+    cmd: "sudo"
+    args: ["/opt/apps/safe-ops-cli/main/tools/venv_rotate.sh"]
+    cwd: "/opt/apps/safe-ops-cli/main"
+    category: "Utilities"
+    tags: ["python", "venv", "maintenance", "deployment"]
+    estimated_duration: "2-10min"
+    risk_level: "medium"
+    params:
+      - name: project
+        type: path
+        label: "Projekt-Verzeichnis"
+        help: "Muss unter /opt/apps/ liegen (z.B. /opt/apps/pcloud-tools)"
+        required: true
+        arg_mode: positional
+
+      - name: dry-run
+        type: bool
+        label: "Dry-Run (--dry-run)"
+        help: "Nur anzeigen, nicht ausführen"
+        default: true
+
+      - name: keep
+        type: int
+        label: "venvs behalten (--keep)"
+        help: "Anzahl der ältesten venvs, die nicht gelöscht werden"
+        default: 3
+        min: 1
+        max: 10
+
+      - name: python
+        type: path
+        label: "Python-Interpreter (optional)"
+        help: "Pfad zu python3 (z.B. /usr/bin/python3). Leer=autodetect"
+        required: false
+
+      - name: req
+        type: path
+        label: "Requirements-Datei (optional)"
+        help: "Benutzerdefinierte requirements.txt (z.B. requirements.lock). Leer=autodetect"
+        required: false
+
 # Parameter-Typen:
 # - string: Einfaches Textfeld
 # - int: Zahleneingabe (mit min/max)
