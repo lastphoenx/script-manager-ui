@@ -721,13 +721,29 @@ scripts:
     estimated_duration: "1-10min"
     risk_level: "medium"
     params:
-      - name: mode
-        type: select
-        label: "Ausführungs-Modus"
-        help: "status=nur Upstream/Local-Status anzeigen; dry-run=simuliert Pull ohne Änderungen; execute=echte Ausführung"
-        options: ["status", "dry-run", "execute"]
-        default: "status"
-        required: true
+      - name: status
+        type: bool
+        label: "Nur Status (--status)"
+        help: "Keine Änderungen, nur Upstream/Local-Status anzeigen"
+        default: true
+        exclusive_group: "sync_mode"
+        enforce_one_in_group: true
+
+      - name: dry-run
+        type: bool
+        label: "Testlauf (--dry-run)"
+        help: "Simuliert Pull ohne Änderungen"
+        default: false
+        exclusive_group: "sync_mode"
+        enforce_one_in_group: true
+
+      - name: execute
+        type: bool
+        label: "Echte Ausführung"
+        help: "Führt Pull wirklich aus (keine Flags)"
+        default: false
+        exclusive_group: "sync_mode"
+        enforce_one_in_group: true
 
   - name: "EW Graceful Shutdown"
     description: "Faehrt EntropyWatcher-Dienste kontrolliert herunter"
@@ -829,13 +845,6 @@ scripts:
         default: 1
         min: 0
         max: 5
-
-      - name: compact
-        type: bool
-        label: "Kompaktes Layout"
-        help: "Kürzere Spaltenbreiten"
-        default: false
-
       - name: per-page
         type: int
         label: "Zeilen pro Seite"
