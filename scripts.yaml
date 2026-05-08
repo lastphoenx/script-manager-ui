@@ -721,17 +721,13 @@ scripts:
     estimated_duration: "1-10min"
     risk_level: "medium"
     params:
-      - name: status
-        type: bool
-        label: "Nur Status anzeigen (--status)"
-        help: "Keine Aenderungen, nur Upstream/Local-Status anzeigen"
-        default: true
-
-      - name: dry-run
-        type: bool
-        label: "Testlauf ohne Pull (--dry-run)"
-        help: "Zeigt an, was gepullt wuerde, ohne Aenderungen"
-        default: false
+      - name: mode
+        type: select
+        label: "Ausführungs-Modus"
+        help: "status=nur Upstream/Local-Status anzeigen; dry-run=simuliert Pull ohne Änderungen; execute=echte Ausführung"
+        options: ["status", "dry-run", "execute"]
+        default: "status"
+        required: true
 
   - name: "EW Graceful Shutdown"
     description: "Faehrt EntropyWatcher-Dienste kontrolliert herunter"
@@ -799,7 +795,7 @@ scripts:
 
   - name: "Terminal Cheatsheet"
     description: "Interaktives Referenz-Cheatsheet für Shell-Befehle (gruppiert, searchbar)"
-    cmd: "python3"
+    cmd: "/opt/apps/safe-ops-cli/venv/bin/python3"
     args: ["/opt/apps/safe-ops-cli/main/tools/cheatx.py", "show"]
     cwd: "/opt/apps/safe-ops-cli/main"
     category: "Utilities"
