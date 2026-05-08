@@ -725,25 +725,13 @@ scripts:
         type: bool
         label: "Nur Status (--status)"
         help: "Keine Änderungen, nur Upstream/Local-Status anzeigen"
-        default: true
-        exclusive_group: "sync_mode"
-        enforce_one_in_group: true
+        default: false
 
       - name: dry-run
         type: bool
         label: "Testlauf (--dry-run)"
-        help: "Simuliert Pull ohne Änderungen"
-        default: false
-        exclusive_group: "sync_mode"
-        enforce_one_in_group: true
-
-      - name: execute
-        type: bool
-        label: "Echte Ausführung"
-        help: "Führt Pull wirklich aus (keine Flags)"
-        default: false
-        exclusive_group: "sync_mode"
-        enforce_one_in_group: true
+        help: "Simuliert Pull ohne Änderungen; für echte Ausführung beide Schalter auf 'Nein'"
+        default: true
 
   - name: "EW Graceful Shutdown"
     description: "Faehrt EntropyWatcher-Dienste kontrolliert herunter"
