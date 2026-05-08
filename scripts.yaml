@@ -845,6 +845,13 @@ scripts:
         default: 1
         min: 0
         max: 5
+
+      - name: compact
+        type: bool
+        label: "Kompaktes Layout"
+        help: "Schmalere Spalten für kleine Displays (Smartphone/Tablet)"
+        default: false
+
       - name: per-page
         type: int
         label: "Zeilen pro Seite"
