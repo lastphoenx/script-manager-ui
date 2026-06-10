@@ -705,6 +705,7 @@ scripts:
       - name: groups
         type: string
         label: "Gruppen (Kurzformen)"
+        help: "Komma-separiert: dv,bv,rv,vs,sys,net,pkg,proc,stor,nas — nas=pi-nas Ops (aggregate, sync_repos, commander)"
         default: ""
         required: false
 
