@@ -335,7 +335,8 @@ scripts:
       - name: manifest
         type: path
         label: "Manifest JSON"
-        help: "Manifest-Datei oder -Ordner (neueste .json wird verwendet)"
+        help: "Einzelne .json oder Ordner — bei Ordner wird die neueste Manifest-Datei verwendet"
+        default: "/srv/pcloud-archive/manifests"
         required: true
 
       - name: output
