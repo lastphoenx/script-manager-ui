@@ -57,6 +57,36 @@ Don't be surprised by occasionally funny commits, lots of emojis 🚀✨, and ot
 ✅ **Multi-Repo Support** - Skripte aus verschiedenen Verzeichnissen (cwd-Support)  
 ✅ **Responsive UI** - Bootstrap 5 Frontend
 
+### Pool-Mode (pcloud-tools)
+
+Das UI ist auf **Pool-Backup** (`/Backup/rtb_pool`) ausgerichtet. Legacy-1:1-Tools wurden entfernt.
+
+| Script | Zweck |
+|--------|--------|
+| **RTB Backup** | `rtb_pool_wrapper.sh` — RTB + Pool-Upload |
+| **Pool Audit Status** | RTB vs. Manifest vs. Remote (Triage) |
+| **Pool Verify Backup** | Vollstaendiger Integritaetscheck |
+| **pCloud Pool GC** | Retention Forecast/Apply + Pool-GC |
+| **Pool Restore** | Wiederherstellung aus Pool-Stubs |
+
+**Wichtige Pfade (pi-nas):**
+
+- Pool-Root: `/Backup/rtb_pool`
+- RTB: `/mnt/backup/rtb_nas`
+- Manifeste: `/srv/pcloud-archive/manifests`
+
+**GC/Retention per Cron** (nicht im Backup-Wrapper):
+
+```cron
+# Monatlich: Retention + GC
+0 4 1 * * cd /opt/apps/pcloud-tools/main && /opt/apps/pcloud-tools/venv/bin/python3 -u pcloud_pool_gc.py \
+  --env-file .env --pool-root /Backup/rtb_pool \
+  --retention-apply --run-gc --grace-hours 24 \
+  >> /var/log/backup/pool_retention.log 2>&1
+```
+
+Doku: `pcloud-tools/pcloud_pool_gc.md`, `docs/STORAGE_PATHS.md`
+
 ---
 
 ## Architektur
