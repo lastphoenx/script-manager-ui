@@ -615,6 +615,76 @@ scripts:
         default: "/srv/nas/restore/pcloud_status.html"
         arg_mode: positional
 
+  - name: "Backup Pipeline Status"
+    description: "systemd-Status von backup-pipeline.service (läuft gerade? letzter Exit?)"
+    cmd: "sudo"
+    args: ["systemctl", "status", "backup-pipeline.service", "--no-pager", "-l"]
+    category: "Reports"
+    tags: ["backup", "pipeline", "monitoring", "pool"]
+    estimated_duration: "<1min"
+    risk_level: "low"
+
+  - name: "Backup Pipeline Log (letzte Zeilen)"
+    description: "journald: letzte Zeilen von backup-pipeline.service (RTB + Pool-Upload)"
+    cmd: "sudo"
+    args: ["journalctl", "-u", "backup-pipeline.service", "--no-pager", "-o", "short-iso", "-n"]
+    category: "Reports"
+    tags: ["backup", "pipeline", "log", "pool"]
+    estimated_duration: "<1min"
+    risk_level: "low"
+    params:
+      - name: lines
+        type: int
+        label: "Anzahl Zeilen"
+        help: "Wie viele der letzten Journal-Zeilen anzeigen"
+        default: 50
+        min: 10
+        max: 500
+        arg_mode: positional
+
+  - name: "Backup Pipeline Log (Pool-Phasen)"
+    description: "journald gefiltert: Manifest-Fortschritt, Upload, Verify, Fehler (ohne rsync-Rauschen)"
+    cmd: "sudo"
+    args:
+      - "bash"
+      - "-lc"
+      - "journalctl -u backup-pipeline.service -n \"${1:-50}\" --no-pager -o short-iso 2>/dev/null | grep -E '\\[manifest\\]|\\[upload\\]|\\[verify\\]|ERROR|pCloud|Uploading|Run ID|Preflight|Smart-Mode|MariaDB' || true"
+      - "_"
+    category: "Reports"
+    tags: ["backup", "pipeline", "log", "pool"]
+    estimated_duration: "<1min"
+    risk_level: "low"
+    params:
+      - name: lines
+        type: int
+        label: "Anzahl Zeilen (vor Filter)"
+        help: "Journal-Zeilen, die dann auf Pool-Phasen gefiltert werden"
+        default: 80
+        min: 20
+        max: 1000
+        arg_mode: positional
+
+  - name: "Backup Pipeline Log (Live)"
+    description: "journald Live-Ticker — läuft bis Kill/Abbruch (wie journalctl -f)"
+    cmd: "sudo"
+    args: ["journalctl", "-u", "backup-pipeline.service", "-f", "-o", "short-iso"]
+    category: "Reports"
+    tags: ["backup", "pipeline", "log", "live", "pool"]
+    estimated_duration: "bis Kill"
+    risk_level: "low"
+
+  - name: "Backup Pipeline Log (Live, Pool-Phasen)"
+    description: "Live-Ticker nur Manifest/Upload/Verify und Fehler — läuft bis Kill"
+    cmd: "sudo"
+    args:
+      - "bash"
+      - "-lc"
+      - "journalctl -u backup-pipeline.service -f -o short-iso 2>/dev/null | grep --line-buffered -E '\\[manifest\\]|\\[upload\\]|\\[verify\\]|ERROR|pCloud|Uploading|Run ID|Preflight|Smart-Mode|MariaDB' || true"
+    category: "Reports"
+    tags: ["backup", "pipeline", "log", "live", "pool"]
+    estimated_duration: "bis Kill"
+    risk_level: "low"
+
   # ==================== UTILITIES ====================
 
   - name: "Terminal Cheatsheet"
