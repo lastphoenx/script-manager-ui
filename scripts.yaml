@@ -229,7 +229,11 @@ scripts:
   # ==================== MAINTENANCE ====================
 
   - name: "pCloud Pool GC"
-    description: "Pool Garbage Collection und Retention (Forecast/Apply). Destruktiv ohne Dry-Run!"
+    description: >
+      Wartung des deduplizierten pCloud-Pools. Drei Betriebsarten (nur eine Retention-Option
+      auf Ja setzen): (1) Prognose = nur anzeigen, (2) Retention = alte Remote-Snapshots
+      entfernen, (3) Standard = beide Retention-Optionen Nein → nur verwaiste Pool-Dateien
+      löschen. Immer zuerst mit Probelauf (Dry-Run) testen!
     cmd: "/opt/apps/pcloud-tools/venv/bin/python3"
     args: ["-u", "pcloud_pool_gc.py"]
     cwd: "/opt/apps/pcloud-tools/main"
@@ -243,69 +247,73 @@ scripts:
     params:
       - name: env-file
         type: path
-        label: ".env Datei"
+        label: "Zugangsdaten (.env)"
+        help: "pCloud-Login und Pfade; Standard auf pi-nas"
         default: "/opt/apps/pcloud-tools/main/.env"
         required: true
 
       - name: pool_root
         type: string
-        label: "Pool-Root (pCloud)"
+        label: "Pool auf pCloud"
+        help: "Wurzel des Pool-Backups remote, z. B. /Backup/rtb_pool (_pool + _snapshots)"
         default: "/Backup/rtb_pool"
         required: true
 
+      - name: retention-forecast
+        type: bool
+        label: "Modus: Retention-Prognose (nur lesen)"
+        help: "Vergleicht lokales RTB mit Remote-Snapshots. Zeigt, was wegfallen würde und wie viel Pool-Speicher frei wäre — ohne zu löschen. Retention ausführen = Nein."
+        default: false
+
+      - name: retention-apply
+        type: bool
+        label: "Modus: Retention ausführen (löschen)"
+        help: "Löscht Remote-Snapshots, die lokal im RTB nicht mehr existieren, und bereinigt den Index. Mit Probelauf zuerst testen. Prognose = Nein."
+        default: false
+
+      - name: rtb-root
+        type: path
+        label: "Lokales RTB (Referenz für Retention)"
+        help: "Snapshot-Ordner unter diesem Pfad gelten als „soll existieren“. Nur bei Prognose oder Retention relevant."
+        default: "/mnt/backup/rtb_nas"
+        required: false
+
+      - name: run-gc
+        type: bool
+        label: "Danach Pool-GC starten"
+        help: "Nach Retention-Löschung sofort verwaiste Dateien im _pool/ entfernen. Nur mit Retention ausführen=Ja und Probelauf=Nein."
+        default: false
+
       - name: dry-run
         type: bool
-        label: "Dry-Run (empfohlen)"
-        help: "Zeigt geplante Loeschungen ohne Ausfuehrung"
+        label: "Probelauf (nichts löschen)"
+        help: "Empfohlen: zeigt geplante Löschungen in der Ausgabe, ändert nichts auf pCloud."
         default: true
-
-      - name: verbose
-        type: bool
-        label: "Verbose Logging"
-        default: false
 
       - name: grace-hours
         type: int
-        label: "Grace Period (Stunden)"
-        help: "Mindestalter von Pool-Dateien vor GC-Loeschung (0 = aus)"
+        label: "Wartezeit vor Pool-Löschung (Stunden)"
+        help: "Nur Standard-GC (beide Retention-Modi Nein): Pool-Dateien müssen so alt sein, bevor sie gelöscht werden. Schützt vor Rennen mit laufendem Backup. 0 = aus."
         default: 24
         min: 0
         max: 168
 
       - name: audit-mode
         type: bool
-        label: "Audit-Mode (Index vs. Stubs)"
-        help: "Langsam — validiert Index gegen physische Stubs"
+        label: "Tiefenprüfung Index vs. Stubs"
+        help: "Langsam: liest Stub-Dateien statt nur den Index. Nur für Standard-GC, nicht mit Retention-Prognose/-Ausführung kombinieren."
         default: false
 
-      - name: retention-forecast
+      - name: verbose
         type: bool
-        label: "Retention Forecast (read-only)"
-        help: "RTB vs. Remote simulieren, GC-Einsparung schaetzen"
-        default: false
-
-      - name: retention-apply
-        type: bool
-        label: "Retention Apply (scharf)"
-        help: "Remote-Snapshots ohne lokales RTB loeschen + Index bereinigen"
-        default: false
-
-      - name: rtb-root
-        type: path
-        label: "RTB-Verzeichnis (fuer Retention)"
-        default: "/mnt/backup/rtb_nas"
-        required: false
-
-      - name: run-gc
-        type: bool
-        label: "Nach Retention-Apply Pool-GC ausfuehren"
-        help: "Nur wirksam mit retention-apply und ohne dry-run"
+        label: "Ausführliches Log"
+        help: "Jede betroffene Datei einzeln in der Ausgabe"
         default: false
 
       - name: highrisk
         type: bool
-        label: "HIGH RISK bestaetigt"
-        help: "Pflicht bei Loeschungen (dry-run aus, retention-apply oder GC)"
+        label: "Löschung bewusst bestätigt"
+        help: "Pflicht-Haken, wenn Probelauf aus und echte Löschung (Retention oder GC) läuft"
         default: false
         ui_only: true
 
