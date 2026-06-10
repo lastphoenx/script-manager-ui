@@ -418,7 +418,7 @@ Nach Update auf Pool-Mode pruefen:
 2. **MariaDB-Migration** (einmalig, Reports-Phasen):
 
 ```bash
-mysql -u pcloud_backup -p pcloud_backup \
+sudo mysql pcloud_backup \
   < /opt/apps/pcloud-tools/main/sql/migrate_pool_phases.sql
 ```
 
