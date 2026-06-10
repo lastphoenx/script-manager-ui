@@ -338,6 +338,16 @@ scripts:
 
   # ==================== SECURITY (EntropyWatcher) ====================
 
+  - name: "Permission Matrix (Samba)"
+    description: "Prueft Samba-/ACL-Berechtigungen und Leak-Szenarien (permission_matrix.py)"
+    cmd: "/opt/apps/pcloud-tools/venv/bin/python3"
+    args: ["permission_matrix.py"]
+    cwd: "/opt/apps/pcloud-tools/main"
+    category: "Security"
+    tags: ["samba", "permissions", "security", "nas"]
+    estimated_duration: "<1min"
+    risk_level: "low"
+
   - name: "EW Status"
     description: "Aktueller EntropyWatcher-Status und Integritaets-Check"
     cmd: "/bin/bash"
@@ -515,6 +525,86 @@ scripts:
     tags: ["backup", "reports", "html", "pool"]
     estimated_duration: "2-5min"
     risk_level: "low"
+
+  - name: "pCloud Status (Last 10)"
+    description: "MariaDB: letzte 10 Backup-Runs (Snapshot, Dauer, Status)"
+    cmd: "/bin/bash"
+    args: ["pcloud_status.sh"]
+    cwd: "/opt/apps/pcloud-tools/main"
+    env_file: ".env"
+    category: "Reports"
+    tags: ["backup", "status", "mariadb", "pool"]
+    estimated_duration: "<1min"
+    risk_level: "low"
+
+  - name: "pCloud Status (Last N)"
+    description: "MariaDB: letzte N Backup-Runs anzeigen"
+    cmd: "/bin/bash"
+    args: ["pcloud_status.sh", "--last-n"]
+    cwd: "/opt/apps/pcloud-tools/main"
+    env_file: ".env"
+    category: "Reports"
+    tags: ["backup", "status", "mariadb", "pool"]
+    estimated_duration: "<1min"
+    risk_level: "low"
+    params:
+      - name: limit
+        type: int
+        label: "Anzahl Runs"
+        default: 20
+        min: 1
+        max: 100
+        arg_mode: positional
+
+  - name: "pCloud Status (Failures)"
+    description: "MariaDB: nur fehlgeschlagene Backup-Runs"
+    cmd: "/bin/bash"
+    args: ["pcloud_status.sh", "--failures"]
+    cwd: "/opt/apps/pcloud-tools/main"
+    env_file: ".env"
+    category: "Reports"
+    tags: ["backup", "status", "mariadb", "pool"]
+    estimated_duration: "<1min"
+    risk_level: "low"
+
+  - name: "pCloud Status (30d Stats)"
+    description: "MariaDB: Statistik der letzten 30 Tage (Success-Rate, Dauer, GB)"
+    cmd: "/bin/bash"
+    args: ["pcloud_status.sh", "--stats"]
+    cwd: "/opt/apps/pcloud-tools/main"
+    env_file: ".env"
+    category: "Reports"
+    tags: ["backup", "status", "mariadb", "pool"]
+    estimated_duration: "<1min"
+    risk_level: "low"
+
+  - name: "pCloud Status (Running Now)"
+    description: "MariaDB: aktuell laufender Backup inkl. Phasen"
+    cmd: "/bin/bash"
+    args: ["pcloud_status.sh", "--current"]
+    cwd: "/opt/apps/pcloud-tools/main"
+    env_file: ".env"
+    category: "Reports"
+    tags: ["backup", "status", "mariadb", "pool"]
+    estimated_duration: "<1min"
+    risk_level: "low"
+
+  - name: "pCloud Status (HTML Report)"
+    description: "MariaDB-Status als HTML-Datei erzeugen"
+    cmd: "/bin/bash"
+    args: ["pcloud_status.sh", "html"]
+    cwd: "/opt/apps/pcloud-tools/main"
+    env_file: ".env"
+    category: "Reports"
+    tags: ["backup", "status", "html", "pool"]
+    estimated_duration: "<1min"
+    risk_level: "low"
+    params:
+      - name: output
+        type: path
+        label: "HTML-Ausgabedatei"
+        default: "/srv/nas/restore/pcloud_status.html"
+        arg_mode: positional
 
   # ==================== UTILITIES ====================
 
