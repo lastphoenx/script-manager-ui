@@ -410,6 +410,35 @@ sudo chown -R www-data:www-data /opt/apps/script-manager-ui/logs/
 
 ---
 
+## Pool-Mode (pcloud-tools)
+
+Nach Update auf Pool-Mode pruefen:
+
+1. **pcloud-tools** gezogen (`git pull` in `/opt/apps/pcloud-tools/main`)
+2. **MariaDB-Migration** (einmalig, Reports-Phasen):
+
+```bash
+mysql -u pcloud_backup -p pcloud_backup \
+  < /opt/apps/pcloud-tools/main/sql/migrate_pool_phases.sql
+```
+
+3. **Script Manager UI** neu starten (laedt `scripts.yaml`):
+
+```bash
+sudo systemctl restart script-manager-ui
+```
+
+4. **`.env` auf pi-nas`** sollte enthalten:
+
+```env
+PCLOUD_ARCHIVE_DIR=/srv/pcloud-archive
+RTB=/mnt/backup/rtb_nas
+```
+
+Pool-GC/Retention laeuft **nicht** im Backup-Wrapper — manuell ueber UI-Script **pCloud Pool GC** oder Cron (siehe `pcloud_pool_gc.md`).
+
+---
+
 ## Update-Prozedur
 
 ```bash

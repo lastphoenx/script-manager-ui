@@ -1,370 +1,111 @@
-# Script Manager UI - Production-Ready Script Definitions
-# Focus: Operational utilities, verification, restore, and monitoring
-# Excluded: Pipeline scripts (scan, init, manifest generation) - these run via systemd.timer
+# Script Manager UI - Pool-Mode Script Definitions
+# Focus: Pool backup (RTB + pCloud Pool), verification, restore, GC, monitoring
+# Excluded: Pipeline scripts (manifest/upload) — run via systemd.timer
+# Legacy 1:1 tools removed (rtb_1to1, pcloud_restore, integrity_check, etc.)
 
 scripts:
-  # ==================== RECOVERY (Critical Priority) ====================
-  
-  - name: "pCloud Restore"
-    description: "Einzelne Datei/Ordner aus Backup nach /srv/restore wiederherstellen"
+  # ==================== RECOVERY ====================
+
+  - name: "Pool Restore"
+    description: "Datei/Ordner aus Pool-Backup (Stubs/pool_refs) nach /srv/nas/restore wiederherstellen"
     cmd: "/opt/apps/pcloud-tools/venv/bin/python3"
-    args: ["-u", "scripts/utilities/pcloud_restore.py"]
+    args: ["-u", "scripts/utilities/pool_restore.py"]
     cwd: "/opt/apps/pcloud-tools/main"
     env_file: ".env"
     env:
       PYTHONPATH: "/opt/apps/pcloud-tools:/opt/apps/pcloud-tools/main"
     category: "Recovery"
-    tags: ["backup", "restore", "recovery"]
-    estimated_duration: "1-5min"
+    tags: ["pool", "backup", "restore", "recovery"]
+    estimated_duration: "1-15min"
     risk_level: "low"
     params:
-      - name: manifest
-        type: string
-        label: "Manifest-Quelle"
-        help: "'pcloud' für Remote-Index oder lokaler Manifest-Pfad"
-        default: "pcloud"
-        required: true
-      
-      - name: file
-        type: string
-        label: "Datei-Pfad im Backup"
-        help: "Vollständiger pCloud-Pfad zur wiederherzustellenden Datei"
-        default: "/Backup/rtb_1to1/_snapshots/2026-04-27-173201/Thomas/Ausbildung/2018-03-0520-17-02_Kursbestätigung_Arbeitorganisation_&_Zeitmanagement.pdf"
-        required: false
-      
-      - name: folder
-        type: string
-        label: "Ordner-Pfad im Backup (alternativ)"
-        help: "Für rekursiven Download eines ganzen Ordners"
-        required: false
-      
-      - name: snapshot
-        type: string
-        label: "Snapshot-Name (alternativ)"
-        help: "z.B. 2026-04-27-173201 für vollständiges Snapshot-Restore"
-        required: false
-      
-      - name: out_dir
+      - name: env-file
         type: path
-        label: "Restore-Zielverzeichnis"
-        help: "Lokaler Pfad wo wiederhergestellt wird"
-        default: "/srv/nas/restore"
+        label: ".env Datei"
+        default: "/opt/apps/pcloud-tools/main/.env"
         required: true
-      
-      - name: download
-        type: bool
-        label: "Wirklich downloaden?"
-        help: "false = nur Plan anzeigen, true = tatsächlich downloaden"
-        default: true
-        required: false
-      
-      - name: verify
-        type: bool
-        label: "SHA256-Verifikation?"
-        help: "Integrität nach Download prüfen"
-        default: true
-        required: false
+
+      - name: pool_root
+        type: string
+        label: "Pool-Root (pCloud)"
+        help: "Remote Pool-Root, z.B. /Backup/rtb_pool"
+        default: "/Backup/rtb_pool"
+        required: true
 
       - name: list-snapshots
         type: bool
         label: "Snapshots auflisten"
-        help: "Listet verfügbare Snapshots und beendet"
+        help: "Verfuegbare Snapshots anzeigen und beenden"
         default: false
-        required: false
 
-      - name: mode
-        type: select
-        label: "Restore-Modus"
-        help: "flat = lokales Verzeichnis; object-store = Objekt-Speicher"
-        options: ["flat", "object-store"]
-        default: "flat"
-        required: false
-
-      - name: verify-only
-        type: bool
-        label: "Nur verifizieren"
-        help: "Prüft geplante Downloads ohne Extraktion"
-        default: false
-        required: false
-
-      - name: folderid
-        type: int
-        label: "pCloud Folder-ID (optional)"
-        help: "Direktzugriff per Folder-ID statt Pfad"
-        required: false
-
-      - name: fileid
-        type: int
-        label: "pCloud File-ID (optional)"
-        help: "Direktzugriff per File-ID statt Pfad"
-        required: false
-
-  - name: "Prepare Fresh Test"
-    description: "Bereitet lokalen Testzustand vor (Snapshot behalten, Cleanup)"
-    cmd: "sudo"
-    args: ["bash", "/opt/apps/pcloud-tools/main/scripts/utilities/prepare_fresh_test.sh"]
-    cwd: "/opt/apps/pcloud-tools/main"
-    category: "Recovery"
-    tags: ["pcloud", "test", "cleanup", "high-risk"]
-    estimated_duration: "1-3min"
-    risk_level: "high"
-    params:
-      - name: keep-snapshot
+      - name: snapshot
         type: string
-        label: "Snapshot behalten"
-        help: "Nur dieser Snapshot bleibt lokal erhalten"
-        default: "2026-04-27-173201"
-        required: true
+        label: "Snapshot-Name"
+        help: "z.B. 2026-06-10-040013"
+        required: false
 
-      - name: keep-local-manifest
-        type: select
-        label: "Lokales Manifest behalten"
-        help: "yes = Keep-Manifest bleibt erhalten"
-        options: ["yes", "no"]
-        default: "yes"
-        required: true
-
-      - name: auto-remote-cleanup
-        type: select
-        label: "Auto: pCloud Remote-Cleanup"
-        help: "yes = Remote-Snapshots/Index automatisch bereinigen; no = manuell"
-        options: ["yes", "no"]
-        default: "yes"
-        required: true
-
-      - name: auto-db-cleanup
-        type: select
-        label: "Auto: DB-Cleanup"
-        help: "yes = DB-Run-History automatisch bereinigen; no = manuell"
-        options: ["yes", "no"]
-        default: "yes"
-        required: true
-
-      - name: highrisk
-        type: bool
-        label: "HIGH RISK bestätigt"
-        help: "Pflicht bei --execute: destruktive Änderungen wurden bewusst bestätigt"
-        default: false
-        ui_only: true
-        required_if_param_true: "execute"
-        required_if_message: "Für --execute bitte zuerst HIGH RISK bestätigen."
-
-      - name: dry-run
-        type: bool
-        label: "--dry-run"
-        help: "Sicherer Standardmodus: zeigt nur geplante Änderungen"
-        default: true
-        exclusive_group: "prepare_fresh_test_mode"
-        enforce_one_in_group: true
-
-      - name: execute
-        type: bool
-        label: "--execute"
-        help: "Führt die Änderungen wirklich aus (destruktiv)"
-        default: false
-        exclusive_group: "prepare_fresh_test_mode"
-        enforce_one_in_group: true
-
-  - name: "pCloud File History"
-    description: "Historie einer Datei über lokale Manifeste nachverfolgen"
-    cmd: "/bin/bash"
-    args: ["/opt/apps/pcloud-tools/main/scripts/utilities/pcloud_file_history.sh"]
-    cwd: "/opt/apps/pcloud-tools/main"
-    category: "Analysis"
-    tags: ["pcloud", "history", "manifest"]
-    estimated_duration: "<1min"
-    risk_level: "low"
-    params:
-      - name: target
+      - name: relpath
         type: string
-        label: "Datei-Pfad im Backup"
-        help: "Beispielpfad ist sofort ausführbar"
-        default: "/Backup/rtb_1to1/_snapshots/2026-04-27-173201/Thomas/Ausbildung/2018-03-0520-17-02_Kursbestätigung_Arbeitorganisation_&_Zeitmanagement.pdf"
-        required: true
-        arg_mode: positional
+        label: "Relativer Pfad (einzelne Datei)"
+        help: "Stub-Weg innerhalb des Snapshots"
+        required: false
 
-  - name: "Smart Strategy Decision Simulator"
-    description: "Offline-Simulation der Smart-Strategy Entscheidung"
-    cmd: "/opt/apps/pcloud-tools/venv/bin/python3"
-    args: ["-u", "/opt/apps/pcloud-tools/main/scripts/utilities/smart_strategy_decision_simulator.py"]
-    cwd: "/opt/apps/pcloud-tools/main"
-    category: "Analysis"
-    tags: ["pcloud", "smart-strategy", "simulation"]
-    estimated_duration: "<1min"
-    risk_level: "low"
-    params:
-      - name: current
+      - name: filter
+        type: string
+        label: "Pfad-Praefix-Filter"
+        help: "Nur Relpaths mit diesem Praefix"
+        required: false
+
+      - name: out-dir
         type: path
-        label: "Aktuelles Manifest"
-        default: "/srv/pcloud-archive/manifests/2026-05-01-103649.json"
-        required: true
+        label: "Restore-Zielverzeichnis"
+        default: "/srv/nas/restore"
+        required: false
 
-      - name: basis
-        type: path
-        label: "Basis-Manifest"
-        default: "/srv/pcloud-archive/manifests/2026-04-27-173201.json"
-        required: true
-
-      - name: auto
+      - name: download
         type: bool
-        label: "Auto-Modus (empfohlen)"
-        help: "Ermittelt source_snapshots und stub_ratio aus realen Daten"
+        label: "Download ausfuehren"
+        help: "false = nur Plan anzeigen"
+        default: false
+
+      - name: verify
+        type: bool
+        label: "SHA256 nach Download pruefen"
         default: true
 
-      - name: index
-        type: path
-        label: "Index-Datei"
-        help: "Master-Index für Auto-Stub-Ratio"
-        default: "/srv/pcloud-archive/indexes/content_index_master.json"
-        required: false
-
-      - name: manifests-dir
-        type: path
-        label: "Manifest-Verzeichnis"
-        help: "Auto-Zählung der Snapshots"
-        default: "/srv/pcloud-archive/manifests"
-        required: false
-
-      - name: template-dir
-        type: path
-        label: "Template-Basisverzeichnis"
-        help: "Prüft auf _template Unterordner"
-        default: "/Backup/rtb_1to1"
-        required: false
-
-      - name: source-snapshots
-        type: int
-        label: "Source Snapshots (manuell, optional)"
-        help: "Nur setzen wenn Auto-Modus aus ist"
-        min: 1
-
-      - name: stub-ratio
-        type: string
-        label: "Stub Ratio (manuell, optional)"
-        help: "Nur setzen wenn Auto-Modus aus ist, z.B. 0.92"
-        required: false
-
-      - name: template-exists
+      - name: allow-incomplete
         type: bool
-        label: "Template vorhanden (manuell, optional)"
-        help: "Nur setzen wenn Auto-Modus aus ist"
-        default: false
-
-      - name: template-match
-        type: string
-        label: "Template Match (manuell, optional)"
-        help: "Nur setzen wenn Auto-Modus aus ist, z.B. 0.97"
-        required: false
-
-      - name: stub-transform-threshold
-        type: string
-        label: "Stub-Transform Schwellenwert (optional)"
-        help: "Überschreibt den Schwellenwert für Stub-Transformation, z.B. 0.90"
-        required: false
-
-      - name: saved-calls-min
-        type: int
-        label: "Min. gespeicherte API-Calls (optional)"
-        help: "Mindestzahl der eingesparten API-Calls für Smart-Strategie"
-        required: false
-
-      - name: template-strong-threshold
-        type: string
-        label: "Template-Strong Schwellenwert (optional)"
-        help: "Überschreibt den starken Template-Match-Schwellenwert, z.B. 0.97"
-        required: false
-
-      - name: json-out
-        type: path
-        label: "JSON Ausgabe (optional)"
-        help: "Simulationsergebnis als JSON-Datei speichern"
-        required: false
-
-      - name: json-only
-        type: bool
-        label: "Nur JSON-Ausgabe"
-        help: "Unterdrückt menschenlesbare Ausgabe"
+        label: "Unvollstaendige Snapshots erlauben"
         default: false
 
   # ==================== BACKUP ====================
-  
+
   - name: "RTB Backup"
-    description: "Rsync Time Backup - Inkrementelles Snapshot-Backup"
+    description: "RTB Snapshot + pCloud Pool-Upload (POOL-MODE via rtb_pool_wrapper.sh)"
     cmd: "/bin/bash"
-    args: ["rtb_wrapper.sh"]
+    args: ["rtb_pool_wrapper.sh"]
     cwd: "/opt/apps/rtb"
     category: "Backup"
-    tags: ["backup", "rsync", "snapshot"]
+    tags: ["backup", "rsync", "snapshot", "pool"]
     estimated_duration: "5-30min"
     risk_level: "high"
     params:
       - name: check-only
         type: bool
         label: "Check-Only (Dry Run)"
-        help: "Nutzt --check-only: nur Änderungsprüfung, kein Lock, kein Backup"
+        help: "Nur Aenderungspruefung, kein Lock, kein Backup"
         default: true
 
       - name: force
         type: bool
         label: "Force Backup"
-        help: "Überspringt Safety-Gate und erzwungenen Lauf via --force"
+        help: "Safety-Gate ueberspringen (--force)"
         default: false
 
       - name: upload-only
         type: path
         label: "Upload-Only: Snapshot-Pfad (optional)"
-        help: "Direkt-Upload eines bestehenden Snapshots nach pCloud ohne neues RTB-Backup"
-        required: false
-
-  - name: "pCloud Simple Upload"
-    description: "Ad-hoc Upload von Datei/Ordner nach pCloud (parallel, mit optionalem Delta-Check)"
-    cmd: "/opt/apps/pcloud-tools/venv/bin/python3"
-    args: ["-u", "pcloud_simple_upload.py"]
-    cwd: "/opt/apps/pcloud-tools/main"
-    env_file: ".env"
-    env:
-      PYTHONPATH: "/opt/apps/pcloud-tools:/opt/apps/pcloud-tools/main"
-    category: "Backup"
-    tags: ["pcloud", "upload", "adhoc"]
-    estimated_duration: "1-30min"
-    risk_level: "medium"
-    params:
-      - name: env-file
-        type: path
-        label: ".env Datei"
-        help: "Pfad zur .env mit PCLOUD_TOKEN/API-Config"
-        default: "/opt/apps/pcloud-tools/main/.env"
-        required: true
-
-      - name: source
-        type: path
-        label: "Quelle (lokal)"
-        help: "Datei oder Ordner, der hochgeladen werden soll"
-        required: true
-
-      - name: destination
-        type: string
-        label: "Ziel (pCloud)"
-        help: "pCloud Zielordner, z.B. /Backup/rtb_1to1/_adhoc/"
-        default: "/Backup/rtb_1to1/_adhoc/"
-        required: true
-
-      - name: no-delta-check
-        type: bool
-        label: "Delta-Check überspringen"
-        help: "Aktiviert --no-delta-check"
-        default: false
-
-      - name: no-auto-download
-        type: bool
-        label: "Kein Auto-Download pcloud_bin_lib.py"
-        help: "Aktiviert --no-auto-download"
-        default: false
-
-      - name: lib-path
-        type: path
-        label: "Custom pcloud_bin_lib.py (optional)"
-        help: "Nur nötig bei Sonder-Setups"
+        help: "Bestehenden RTB-Snapshot nach pCloud hochladen ohne neues RTB-Backup"
         required: false
 
   - name: "microSD Raw Image Backup (dd)"
@@ -384,203 +125,192 @@ scripts:
       - name: output-path
         type: path
         label: "Output Image Pfad"
-        help: "Default-Vorschlag: /mnt/backup/rpi5-Radxa_SATA_HAT_microsd-live-backup-AUTO_TIMESTAMP.img"
+        help: "Default: /mnt/backup/rpi5-Radxa_SATA_HAT_microsd-live-backup-AUTO_TIMESTAMP.img"
         default: "/mnt/backup/rpi5-Radxa_SATA_HAT_microsd-live-backup-AUTO_TIMESTAMP.img"
         required: false
         arg_mode: positional
 
       - name: highrisk
         type: bool
-        label: "HIGH RISK bestätigt"
-        help: "Pflicht: dd liest raw vom Blockdevice; if/of müssen korrekt sein"
+        label: "HIGH RISK bestaetigt"
+        help: "Pflicht: dd liest raw vom Blockdevice"
         default: false
         ui_only: true
         required: true
 
   # ==================== VERIFICATION & INTEGRITY ====================
-  
-  - name: "pCloud Quick Delta"
-    description: "Schnelle Tamper-Detection für pCloud-Backups"
+
+  - name: "Pool Audit Status"
+    description: "Schneller Status: RTB vs. Manifeste vs. pCloud (.upload_complete) vs. MariaDB"
     cmd: "/opt/apps/pcloud-tools/venv/bin/python3"
-    args: ["-u", "pcloud_quick_delta.py"]
+    args: ["-u", "scripts/utilities/pool_audit_status.py"]
     cwd: "/opt/apps/pcloud-tools/main"
     env_file: ".env"
     env:
       PYTHONPATH: "/opt/apps/pcloud-tools:/opt/apps/pcloud-tools/main"
     category: "Verification"
-    tags: ["backup", "verification", "integrity"]
-    estimated_duration: "2-5min"
+    tags: ["pool", "status", "monitoring", "audit"]
+    estimated_duration: "1-3min"
     risk_level: "low"
     params:
-      - name: dest_root
-        type: string
-        label: "pCloud Basispfad"
-        help: "z.B. /Backup/rtb_1to1"
-        required: true
-        default: "/Backup/rtb_1to1"
-      
-      - name: index_file
-        type: string
-        label: "Index-Datei"
-        help: "content_index.json oder Archive z.B. 2026-04-10-075334_index.json"
-        required: false
-        default: "content_index.json"
-      
-      - name: backfill_check
-        type: bool
-        label: "SHA256 Backfill-Check"
-        help: "Gründlicherer Check für Lücken (langsamer)"
-        default: false
-      
-      - name: json_out
+      - name: env-file
         type: path
-        label: "JSON Report Ausgabe"
-        help: "Optional: Report als JSON speichern"
+        label: ".env Datei"
+        default: "/opt/apps/pcloud-tools/main/.env"
+        required: true
+
+      - name: pool_root
+        type: string
+        label: "Pool-Root (pCloud)"
+        default: "/Backup/rtb_pool"
+        required: true
+
+      - name: rtb-root
+        type: path
+        label: "RTB-Verzeichnis (lokal)"
+        default: "/mnt/backup/rtb_nas"
         required: false
 
-      - name: backfill-sample
+      - name: manifests-dir
+        type: path
+        label: "Manifest-Verzeichnis"
+        default: "/srv/pcloud-archive/manifests"
+        required: false
+
+      - name: skip-db
+        type: bool
+        label: "MariaDB ueberspringen"
+        default: false
+
+      - name: workers
         type: int
-        label: "Backfill-Stichproben"
-        help: "Anzahl Dateien für SHA-Backfill (0 = deaktiviert)"
+        label: "Parallele Remote-Checks"
+        default: 8
+        min: 1
+        max: 32
+
+  - name: "Pool Verify Backup"
+    description: "Vollstaendiger Integritaetscheck: lokale Manifeste vs. Remote Pool + Stubs"
+    cmd: "/opt/apps/pcloud-tools/venv/bin/python3"
+    args: ["-u", "scripts/utilities/pool_verify_backup.py"]
+    cwd: "/opt/apps/pcloud-tools/main"
+    env_file: ".env"
+    env:
+      PYTHONPATH: "/opt/apps/pcloud-tools:/opt/apps/pcloud-tools/main"
+    category: "Verification"
+    tags: ["pool", "verification", "integrity"]
+    estimated_duration: "5-30min"
+    risk_level: "low"
+    params:
+      - name: env-file
+        type: path
+        label: ".env Datei"
+        default: "/opt/apps/pcloud-tools/main/.env"
+        required: true
+
+      - name: pool_root
+        type: string
+        label: "Pool-Root (pCloud)"
+        default: "/Backup/rtb_pool"
+        required: true
+
+      - name: manifests-dir
+        type: path
+        label: "Manifest-Verzeichnis"
+        default: "/srv/pcloud-archive/manifests"
+        required: false
+
+      - name: stub-sample
+        type: int
+        label: "Stub-Stichprobe (0 = alle)"
         default: 0
         min: 0
 
-      - name: env-file
-        type: path
-        label: ".env Datei (optional)"
-        help: "Überschreibt die Standard-.env"
-        required: false
+  # ==================== MAINTENANCE ====================
 
-      - name: profile
-        type: string
-        label: "Profil (optional)"
-        help: "Konfig-Profil für pCloud-Verbindung"
-        required: false
-
-  - name: "pCloud Integrity Check"
-    description: "Verifiziert Stub-Dateien gegen content_index.json"
+  - name: "pCloud Pool GC"
+    description: "Pool Garbage Collection und Retention (Forecast/Apply). Destruktiv ohne Dry-Run!"
     cmd: "/opt/apps/pcloud-tools/venv/bin/python3"
-    args: ["-u", "scripts/utilities/pcloud_integrity_check.py"]
+    args: ["-u", "pcloud_pool_gc.py"]
     cwd: "/opt/apps/pcloud-tools/main"
     env_file: ".env"
     env:
       PYTHONPATH: "/opt/apps/pcloud-tools:/opt/apps/pcloud-tools/main"
-    category: "Verification"
-    tags: ["backup", "integrity", "verification"]
-    estimated_duration: "5-15min"
-    risk_level: "low"
+    category: "Maintenance"
+    tags: ["pool", "gc", "retention", "high-risk"]
+    estimated_duration: "2-60min"
+    risk_level: "high"
     params:
-      - name: dest_root
+      - name: env-file
         type: path
-        label: "pCloud Backup Root"
-        help: "z.B. /Backup/rtb_1to1"
+        label: ".env Datei"
+        default: "/opt/apps/pcloud-tools/main/.env"
         required: true
-        default: "/Backup/rtb_1to1"
-      
-      - name: stub_sample
-        type: int
-        label: "Stub-Stichproben pro Snapshot"
-        help: "Anzahl Stub-Dateien zu pr\u00fcfen (0 = alle)"
-        default: 50
-        min: 0
-      
-      - name: checksum_sample
-        type: int
-        label: "Checksum-Stichproben"
-        help: "Anzahl Index-Checksums zu prüfen (0 = alle) - sequenziell, ca. 20-30s pro File!"
-        default: 10
-        min: 0
 
-      - name: json-out
-        type: path
-        label: "JSON Report Ausgabe (optional)"
-        help: "Speichert Ergebnis als JSON"
-        required: false
-
-      - name: stubs-mode
-        type: select
-        label: "Stubs-Modus"
-        help: "Wie werden Stub-Dateien verarbeitet"
-        options: ["separate", "combined", "both"]
-        default: "separate"
-
-      - name: level
-        type: select
-        label: "Prüf-Level"
-        help: "FAST = nur Metadaten; FILEID = ID-Match; SHA = voller Checksum"
-        options: ["FAST", "FILEID", "SHA"]
-        default: "FILEID"
+      - name: pool_root
+        type: string
+        label: "Pool-Root (pCloud)"
+        default: "/Backup/rtb_pool"
+        required: true
 
       - name: dry-run
         type: bool
-        label: "Dry-Run"
-        help: "Zeigt Probleme ohne Korrekturen"
+        label: "Dry-Run (empfohlen)"
+        help: "Zeigt geplante Loeschungen ohne Ausfuehrung"
         default: true
-        exclusive_group: "integrity_mode"
-        enforce_one_in_group: true
 
-      - name: autofix-safe
+      - name: verbose
         type: bool
-        label: "AutoFix (nur sichere Fixes)"
-        help: "Behebt nur sichere Probleme automatisch (kein Datenverlust möglich)"
+        label: "Verbose Logging"
         default: false
-        exclusive_group: "integrity_mode"
-        enforce_one_in_group: true
+
+      - name: grace-hours
+        type: int
+        label: "Grace Period (Stunden)"
+        help: "Mindestalter von Pool-Dateien vor GC-Loeschung (0 = aus)"
+        default: 24
+        min: 0
+        max: 168
+
+      - name: audit-mode
+        type: bool
+        label: "Audit-Mode (Index vs. Stubs)"
+        help: "Langsam — validiert Index gegen physische Stubs"
+        default: false
+
+      - name: retention-forecast
+        type: bool
+        label: "Retention Forecast (read-only)"
+        help: "RTB vs. Remote simulieren, GC-Einsparung schaetzen"
+        default: false
+
+      - name: retention-apply
+        type: bool
+        label: "Retention Apply (scharf)"
+        help: "Remote-Snapshots ohne lokales RTB loeschen + Index bereinigen"
+        default: false
+
+      - name: rtb-root
+        type: path
+        label: "RTB-Verzeichnis (fuer Retention)"
+        default: "/mnt/backup/rtb_nas"
+        required: false
+
+      - name: run-gc
+        type: bool
+        label: "Nach Retention-Apply Pool-GC ausfuehren"
+        help: "Nur wirksam mit retention-apply und ohne dry-run"
+        default: false
+
+      - name: highrisk
+        type: bool
+        label: "HIGH RISK bestaetigt"
+        help: "Pflicht bei Loeschungen (dry-run aus, retention-apply oder GC)"
+        default: false
         ui_only: true
-        required_if_message: "AutoFix: bitte HIGH-RISK-Implikationen prüfen."
-
-  - name: "Verify Index vs Manifests"
-    description: "Vergleicht content_index.json mit lokalen JSON-Manifesten"
-    cmd: "/opt/apps/pcloud-tools/venv/bin/python3"
-    args: ["-u", "scripts/utilities/pcloud_verify_index_vs_manifests.py"]
-    cwd: "/opt/apps/pcloud-tools/main"
-    env_file: ".env"
-    env:
-      PYTHONPATH: "/opt/apps/pcloud-tools:/opt/apps/pcloud-tools/main"
-    category: "Verification"
-    tags: ["backup", "verification", "index"]
-    estimated_duration: "2-5min"
-    risk_level: "low"
-    params:
-      - name: dest_root
-        type: path
-        label: "pCloud Backup Root"
-        required: true
-        default: "/Backup/rtb_1to1"
-      
-      - name: manifest_dir
-        type: path
-        label: "Lokale Manifest-Verzeichnis"
-        help: "Wo liegen die lokalen .json Manifeste?"
-        required: true
-
-      - name: index-file
-        type: string
-        label: "Index-Datei"
-        help: "Name der Index-Datei (Standard: content_index.json)"
-        default: "content_index.json"
-        required: false
-
-      - name: env-file
-        type: path
-        label: ".env Datei (optional)"
-        help: "Überschreibt die Standard-.env"
-        required: false
-
-      - name: profile
-        type: string
-        label: "Profil (optional)"
-        help: "Konfig-Profil für pCloud-Verbindung"
-        required: false
-
-      - name: json-out
-        type: path
-        label: "JSON Report Ausgabe (optional)"
-        help: "Speichert Ergebnis als JSON"
-        required: false
 
   # ==================== ANALYSIS ====================
-  
+
   - name: "Duplikate Analyse"
     description: "Sucht identische Dateien im Backup-Manifest (Excel-Export)"
     cmd: "/opt/apps/pcloud-tools/venv/bin/python3"
@@ -590,27 +320,26 @@ scripts:
     env:
       PYTHONPATH: "/opt/apps/pcloud-tools:/opt/apps/pcloud-tools/main"
     category: "Analysis"
-    tags: ["backup", "analysis", "duplicates"]
+    tags: ["backup", "analysis", "duplicates", "pool"]
     estimated_duration: "5-20min"
     risk_level: "low"
     params:
       - name: manifest
         type: path
         label: "Manifest JSON"
-        help: "Pfad zu einer Manifest-Datei ODER zu einem Manifest-Ordner (neueste .json wird verwendet)"
+        help: "Manifest-Datei oder -Ordner (neueste .json wird verwendet)"
         required: true
-      
+
       - name: output
         type: path
         label: "Excel-Ausgabe"
-        help: "Pfad zur Excel-Datei (SMB-erreichbar z.B. unter /srv/nas/restore)"
         default: "/srv/nas/restore/duplicates.xlsx"
         required: true
 
   # ==================== SECURITY (EntropyWatcher) ====================
-  
+
   - name: "EW Status"
-    description: "Aktueller EntropyWatcher-Status und Integritäts-Check"
+    description: "Aktueller EntropyWatcher-Status und Integritaets-Check"
     cmd: "/bin/bash"
     args: ["scripts/ew_status.sh", "/opt/apps/entropywatcher/config"]
     cwd: "/opt/apps/entropywatcher/main"
@@ -621,7 +350,7 @@ scripts:
     risk_level: "low"
 
   - name: "EW Forecast Next Run"
-    description: "Wann läuft der nächste EntropyWatcher-Scan?"
+    description: "Wann laeuft der naechste EntropyWatcher-Scan?"
     cmd: "/bin/bash"
     args: ["scripts/ew_forecast_next_run.sh"]
     cwd: "/opt/apps/entropywatcher/main"
@@ -644,7 +373,7 @@ scripts:
         default: "next"
 
   - name: "EW Backup Slot Check"
-    description: "Prüft ob Backup-Slot verfügbar ist (Kollisionsvermeidung)"
+    description: "Prueft ob Backup-Slot verfuegbar ist (Kollisionsvermeidung)"
     cmd: "/bin/bash"
     args: ["scripts/ew_backup_slot_check.sh"]
     cwd: "/opt/apps/entropywatcher/main"
@@ -657,12 +386,11 @@ scripts:
       - name: offset-days
         type: int
         label: "Offset Tage (optional)"
-        help: "Manuelle Verschiebung in Tagen (Standard: auto aus timer)"
         required: false
         arg_mode: positional
 
   - name: "Honeyfile Monitor"
-    description: "Statusprüfung der Köder-Dateien (Tamper-Detection)"
+    description: "Statuspruefung der Koeder-Dateien (Tamper-Detection)"
     cmd: "/bin/bash"
     args: ["honeyfile_monitor.sh"]
     cwd: "/opt/apps/entropywatcher/main"
@@ -677,7 +405,7 @@ scripts:
     risk_level: "low"
 
   - name: "Safety Gate Status"
-    description: "Prüft ob Sicherheits-Gate (Schreibschutz) aktiv ist"
+    description: "Prueft ob Sicherheits-Gate (Schreibschutz) aktiv ist"
     cmd: "/bin/bash"
     args: ["safety_gate.sh"]
     cwd: "/opt/apps/entropywatcher/main"
@@ -690,7 +418,6 @@ scripts:
       - name: strict
         type: bool
         label: "Strict Mode (--strict)"
-        help: "Blockiert auch bei YELLOW-Status"
         default: false
 
   - name: "Forecast Safety Gate"
@@ -707,7 +434,6 @@ scripts:
       - name: offset-days
         type: int
         label: "Offset Tage (optional)"
-        help: "Manuelle Verschiebung in Tagen"
         required: false
         arg_mode: positional
 
@@ -724,13 +450,11 @@ scripts:
       - name: status
         type: bool
         label: "Nur Status (--status)"
-        help: "Keine Änderungen, nur Upstream/Local-Status anzeigen"
         default: false
 
       - name: dry-run
         type: bool
         label: "Testlauf (--dry-run)"
-        help: "Simuliert Pull ohne Änderungen; für echte Ausführung beide Schalter auf 'Nein'"
         default: true
 
   - name: "EW Graceful Shutdown"
@@ -746,7 +470,6 @@ scripts:
       - name: timeout
         type: int
         label: "Timeout pro Service (Sekunden)"
-        help: "Default 1800 (30min); maximale Wartezeit pro Service"
         default: 1800
         min: 30
         max: 7200
@@ -754,13 +477,11 @@ scripts:
       - name: dry-run
         type: bool
         label: "Dry-Run (--dry-run)"
-        help: "Nur pruefen/warten, kein Shutdown"
         default: true
 
       - name: no-shutdown
         type: bool
         label: "Dienste laufen lassen (--no-shutdown)"
-        help: "Stoppt die Timer, wartet bis alle EW-Dienste inaktiv sind – fuehrt aber KEIN 'systemctl stop' aus. Das System bleibt voll hochgefahren, die Dienste laufen weiter."
         default: false
 
   - name: "EW Service Check"
@@ -774,31 +495,31 @@ scripts:
     risk_level: "low"
 
   # ==================== REPORTS ====================
-  
+
   - name: "pCloud Aggregate Status"
     description: "Zusammenfassung aller pCloud-Backup-Status"
     cmd: "/bin/bash"
     args: ["scripts/aggregate_status.sh"]
     cwd: "/opt/apps/pcloud-tools/main"
     category: "Reports"
-    tags: ["backup", "status", "monitoring"]
+    tags: ["backup", "status", "monitoring", "pool"]
     estimated_duration: "1-2min"
     risk_level: "low"
 
   - name: "pCloud Generate Reports"
-    description: "Generiert detaillierte Backup-Reports (HTML/JSON)"
+    description: "Generiert detaillierte Backup-Reports (HTML/JSON) — Pool-Pipeline-Phasen"
     cmd: "/bin/bash"
     args: ["scripts/generate_reports.sh"]
     cwd: "/opt/apps/pcloud-tools/main"
     category: "Reports"
-    tags: ["backup", "reports", "html"]
+    tags: ["backup", "reports", "html", "pool"]
     estimated_duration: "2-5min"
     risk_level: "low"
 
   # ==================== UTILITIES ====================
 
   - name: "Terminal Cheatsheet"
-    description: "Interaktives Referenz-Cheatsheet für Shell-Befehle (gruppiert, searchbar)"
+    description: "Interaktives Referenz-Cheatsheet fuer Shell-Befehle"
     cmd: "/opt/apps/safe-ops-cli/venv/bin/python3"
     args: ["/opt/apps/safe-ops-cli/main/tools/cheatx.py", "show"]
     cwd: "/opt/apps/safe-ops-cli/main"
@@ -810,15 +531,13 @@ scripts:
       - name: search
         type: string
         label: "Suchtext (Regex)"
-        help: "Filtern nach Befehlsname, Beschreibung oder Beispielen"
         required: false
 
       - name: groups
         type: string
         label: "Gruppen (Kurzformen)"
-        help: "Komma-separiert (dv=Dateien, bv=Benutzer, rv=Rechte, vs=Navigation, sys=System, net=Netz, pkg=Pakete, proc=Prozesse, stor=Storage). Leer=alle"
-        required: false
         default: ""
+        required: false
 
       - name: format
         type: select
@@ -829,7 +548,6 @@ scripts:
       - name: examples-lines
         type: int
         label: "Beispielzeilen pro Eintrag"
-        help: "Wie viele Beispielzeilen anzeigen (0=keine)"
         default: 1
         min: 0
         max: 5
@@ -837,18 +555,16 @@ scripts:
       - name: compact
         type: bool
         label: "Kompaktes Layout"
-        help: "Schmalere Spalten für kleine Displays (Smartphone/Tablet)"
         default: false
 
       - name: per-page
         type: int
         label: "Zeilen pro Seite"
-        help: "Für Paginierung"
         default: 20
         min: 5
 
   - name: "Python venv Rotate"
-    description: "Erstellt neue Virtual Environment, verlinkt als 'venv', räumt alte auf"
+    description: "Erstellt neue Virtual Environment, verlinkt als 'venv', raeumt alte auf"
     cmd: "sudo"
     args: ["/opt/apps/safe-ops-cli/main/tools/venv_rotate.sh"]
     cwd: "/opt/apps/safe-ops-cli/main"
@@ -860,20 +576,18 @@ scripts:
       - name: project
         type: path
         label: "Projekt-Verzeichnis"
-        help: "Muss unter /opt/apps/ liegen (z.B. /opt/apps/pcloud-tools)"
+        help: "Muss unter /opt/apps/ liegen"
         required: true
         arg_mode: positional
 
       - name: dry-run
         type: bool
         label: "Dry-Run (--dry-run)"
-        help: "Nur anzeigen, nicht ausführen"
         default: true
 
       - name: keep
         type: int
         label: "venvs behalten (--keep)"
-        help: "Anzahl der ältesten venvs, die nicht gelöscht werden"
         default: 3
         min: 1
         max: 10
@@ -881,18 +595,12 @@ scripts:
       - name: python
         type: path
         label: "Python-Interpreter (optional)"
-        help: "Pfad zu python3 (z.B. /usr/bin/python3). Leer=autodetect"
         required: false
 
       - name: req
         type: path
         label: "Requirements-Datei (optional)"
-        help: "Benutzerdefinierte requirements.txt (z.B. requirements.lock). Leer=autodetect"
         required: false
 
 # Parameter-Typen:
-# - string: Einfaches Textfeld
-# - int: Zahleneingabe (mit min/max)
-# - bool: Checkbox
-# - path: Textfeld mit Pfad-Validierung
-# - select: Dropdown (options erforderlich)
+# - string, int, bool, path, select (siehe README.md)
