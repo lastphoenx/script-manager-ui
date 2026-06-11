@@ -67,7 +67,8 @@ Das UI ist auf **Pool-Backup** (`/Backup/rtb_pool`) ausgerichtet. Legacy-1:1-Too
 | **Pool Audit Status** | RTB vs. Manifest vs. Remote (Triage) |
 | **Pool Verify Backup** | Vollstaendiger Integritaetscheck |
 | **pCloud Pool GC** | Retention Forecast/Apply + Pool-GC |
-| **Pool Restore** | Wiederherstellung aus Pool-Stubs |
+| **Pool Restore** | Wiederherstellung aus Pool-Stubs (Einzel-Snapshot oder **Alle Snapshot-Versionen**) |
+| **RTB Delta Report** | rsync Dry-Run vs. latest RTB — Delta nach Top-Ordnern |
 
 **Wichtige Pfade (pi-nas):**
 
