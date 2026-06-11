@@ -108,6 +108,42 @@ scripts:
         help: "Bestehenden RTB-Snapshot nach pCloud hochladen ohne neues RTB-Backup"
         required: false
 
+  - name: "RTB Delta Report"
+    description: "rsync Dry-Run gegen latest RTB-Snapshot — Aenderungen nach Top-Level-Ordnern gruppiert (read-only)"
+    cmd: "/bin/bash"
+    args: ["rtb_delta_report.sh"]
+    cwd: "/opt/apps/rtb"
+    category: "Analysis"
+    tags: ["rsync", "rtb", "delta", "dry-run"]
+    estimated_duration: "2-15min"
+    risk_level: "low"
+    params:
+      - name: top-n
+        type: int
+        label: "Top Ordner (Gruppierung)"
+        help: "Wie viele Top-Level-Ordner in der Uebersicht (nach Anzahl Delta-Zeilen)"
+        default: 20
+        min: 1
+        max: 100
+
+      - name: full-listing
+        type: bool
+        label: "Alle Delta-Zeilen anzeigen"
+        help: "Zusaetzlich jede rsync-Zeile ausgeben (kann sehr lang sein)"
+        default: false
+
+      - name: source
+        type: path
+        label: "Quellverzeichnis"
+        default: "/srv/nas"
+        required: false
+
+      - name: rtb-root
+        type: path
+        label: "RTB-Verzeichnis"
+        default: "/mnt/backup/rtb_nas"
+        required: false
+
   - name: "microSD Raw Image Backup (dd)"
     description: "Erstellt ein 1:1 Raw-Image der microSD nach /mnt/backup (destruktiv bei falschem Device)"
     cmd: "sudo"
