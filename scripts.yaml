@@ -78,6 +78,18 @@ scripts:
         label: "Unvollstaendige Snapshots erlauben"
         default: false
 
+      - name: all-versions
+        type: bool
+        label: "Alle Snapshot-Versionen"
+        help: "Timeline + Restore ueber alle Snapshots (--relpath oder --filter). Ohne --snapshot."
+        default: false
+
+      - name: only-changed
+        type: bool
+        label: "Nur geaenderte Versionen laden"
+        help: "Bei All-Versions-Download: Snapshots mit gleichem SHA wie Vorgaenger ueberspringen"
+        default: false
+
   # ==================== BACKUP ====================
 
   - name: "RTB Backup"
