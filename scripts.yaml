@@ -274,6 +274,60 @@ scripts:
         default: 0
         min: 0
 
+  - name: "Pool Check Remote"
+    description: "Read-only: pCloud-Index, Pool-SHAs, optional ein Snapshot (.upload_complete + Stub-Anzahl)"
+    cmd: "/opt/apps/pcloud-tools/venv/bin/python3"
+    args: ["-u", "scripts/utilities/pool_check_remote.py"]
+    cwd: "/opt/apps/pcloud-tools/main"
+    env_file: ".env"
+    env:
+      PYTHONPATH: "/opt/apps/pcloud-tools:/opt/apps/pcloud-tools/main"
+    category: "Verification"
+    tags: ["pool", "verification", "remote", "snapshot"]
+    estimated_duration: "1-5min"
+    risk_level: "low"
+    params:
+      - name: env-file
+        type: path
+        label: ".env Datei"
+        default: "/opt/apps/pcloud-tools/main/.env"
+        required: true
+
+      - name: dest-root
+        type: string
+        label: "Pool-Root (pCloud)"
+        help: "Remote Pool-Root, z.B. /Backup/rtb_pool"
+        default: "/Backup/rtb_pool"
+        required: true
+
+      - name: snapshot
+        type: string
+        label: "Snapshot-Name (optional)"
+        help: "z.B. 2026-06-14-120015 — prueft .upload_complete und Stub-Anzahl"
+        required: false
+
+  - name: "Pool Check Local"
+    description: "Read-only: Archiv-Manifest und lokaler Master-Index (content_index_master.json)"
+    cmd: "/opt/apps/pcloud-tools/venv/bin/python3"
+    args: ["-u", "scripts/utilities/pool_check_local.py"]
+    cwd: "/opt/apps/pcloud-tools/main"
+    category: "Verification"
+    tags: ["pool", "verification", "local", "manifest"]
+    estimated_duration: "<1min"
+    risk_level: "low"
+    params:
+      - name: manifest
+        type: path
+        label: "Manifest JSON (optional)"
+        help: "z.B. /srv/pcloud-archive/manifests/2026-06-14-120015.json"
+        required: false
+
+      - name: master-index
+        type: path
+        label: "Master-Index"
+        default: "/srv/pcloud-archive/indexes/content_index_master.json"
+        required: false
+
   # ==================== MAINTENANCE ====================
 
   - name: "pCloud Pool GC"
