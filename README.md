@@ -57,36 +57,13 @@ Don't be surprised by occasionally funny commits, lots of emojis 🚀✨, and ot
 ✅ **Multi-Repo Support** - Skripte aus verschiedenen Verzeichnissen (cwd-Support)  
 ✅ **Responsive UI** - Bootstrap 5 Frontend
 
-### Pool-Mode (pcloud-tools)
+### Script-Katalog (pi-nas)
 
-Das UI ist auf **Pool-Backup** (`/Backup/rtb_pool`) ausgerichtet. Legacy-1:1-Tools wurden entfernt.
+Auf `pi-nas` sind Pool-Mode-Skripte in `scripts.yaml` hinterlegt (Backup, Verify, Restore, GC, EntropyWatcher, Reports). Die UI startet diese Skripte — sie enthält deren Betriebslogik nicht.
 
-| Script | Zweck |
-|--------|--------|
-| **RTB Backup** | `rtb_pool_wrapper.sh` — RTB + Pool-Upload |
-| **Pool Audit Status** | RTB vs. Manifest vs. Remote (Triage) |
-| **Pool Verify Backup** | Vollstaendiger Integritaetscheck |
-| **pCloud Pool GC** | Retention Forecast/Apply + Pool-GC |
-| **Pool Restore** | Wiederherstellung aus Pool-Stubs (Einzel-Snapshot oder **Alle Snapshot-Versionen**) |
-| **RTB Delta Report** | rsync Dry-Run vs. latest RTB — Delta nach Top-Ordnern |
-
-**Wichtige Pfade (pi-nas):**
-
-- Pool-Root: `/Backup/rtb_pool`
-- RTB: `/mnt/backup/rtb_nas`
-- Manifeste: `/srv/pcloud-archive/manifests`
-
-**GC/Retention per Cron** (nicht im Backup-Wrapper):
-
-```cron
-# Monatlich: Retention + GC
-0 4 1 * * cd /opt/apps/pcloud-tools/main && /opt/apps/pcloud-tools/venv/bin/python3 -u pcloud_pool_gc.py \
-  --env-file .env --pool-root /Backup/rtb_pool \
-  --retention-apply --run-gc --grace-hours 24 \
-  >> /var/log/backup/pool_retention.log 2>&1
-```
-
-Doku: `pcloud-tools/pcloud_pool_gc.md`, `docs/STORAGE_PATHS.md`
+**Bedienung (pi-nas):** [Doku/bedienungsanleitung.md](https://github.com/lastphoenx/Doku/blob/main/Raspi/raspinas/script-manager-ui/bedienungsanleitung.md) (privates Doku-Repo)  
+**GC / Retention / Cron:** Repo `pcloud-tools` → `pcloud_pool_gc.md`  
+**Geplante Jobs (pi-nas):** [Doku/cron-jobs.md](https://github.com/lastphoenx/Doku/blob/main/Raspi/raspinas/ops/cron-jobs.md)
 
 ---
 
@@ -126,7 +103,7 @@ Doku: `pcloud-tools/pcloud_pool_gc.md`, `docs/STORAGE_PATHS.md`
 # Datenbank und User erstellen
 sudo mysql -u root
 
-> source /opt/script-manager-ui/init_db.sql
+> source /opt/apps/script-manager-ui/init_db.sql
 > CREATE USER 'script_manager'@'localhost' IDENTIFIED BY 'your_secure_password';
 > GRANT ALL ON script_manager.* TO 'script_manager'@'localhost';
 > FLUSH PRIVILEGES;
@@ -136,7 +113,7 @@ sudo mysql -u root
 ### 3. Python Environment
 
 ```bash
-cd /opt/script-manager-ui
+cd /opt/apps/script-manager-ui
 
 # Virtual Environment erstellen
 python3 -m venv venv
@@ -213,9 +190,9 @@ After=network.target mariadb.service
 Type=simple
 User=www-data
 Group=www-data
-WorkingDirectory=/opt/script-manager-ui
-Environment="PATH=/opt/script-manager-ui/venv/bin"
-ExecStart=/opt/script-manager-ui/venv/bin/uvicorn main:app --host 127.0.0.1 --port 8000
+WorkingDirectory=/opt/apps/script-manager-ui
+Environment="PATH=/opt/apps/script-manager-ui/venv/bin"
+ExecStart=/opt/apps/script-manager-ui/venv/bin/uvicorn main:app --host 127.0.0.1 --port 8000
 Restart=always
 RestartSec=5
 
@@ -407,6 +384,19 @@ Aktuell **nicht** im MVP (kann später ergänzt werden):
 - [ ] Scheduler im UI (systemd-Timer-Alternative)
 - [ ] Approval-Workflows für kritische Scripts
 - [ ] Multi-Server Support (Remote-Execution via SSH)
+
+---
+
+## Dokumentation (Übersicht)
+
+| Thema | Wo |
+|-------|-----|
+| **Install, API, `scripts.yaml`-Schema, Troubleshooting** | Dieses README + `INSTALLATION.md` |
+| **Bedienung auf pi-nas** | [Doku: bedienungsanleitung.md](https://github.com/lastphoenx/Doku/blob/main/Raspi/raspinas/script-manager-ui/bedienungsanleitung.md) |
+| **Script-Liste (pi-nas)** | [Doku: script-katalog.md](https://github.com/lastphoenx/Doku/blob/main/Raspi/raspinas/script-manager-ui/script-katalog.md) |
+| **GC, Retention, Grace Period** | Repo `pcloud-tools` → `pcloud_pool_gc.md` |
+| **Timer & Cron (pi-nas)** | [Doku: cron-jobs.md](https://github.com/lastphoenx/Doku/blob/main/Raspi/raspinas/ops/cron-jobs.md) |
+| **Integritäts-CLI** | [Doku: integrity-checks.md](https://github.com/lastphoenx/Doku/blob/main/Raspi/raspinas/ops/integrity-checks.md) |
 
 ---
 
