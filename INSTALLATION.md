@@ -435,7 +435,7 @@ PCLOUD_ARCHIVE_DIR=/srv/pcloud-archive
 RTB=/mnt/backup/rtb_nas
 ```
 
-Pool-GC/Retention laeuft **nicht** im Backup-Wrapper — manuell ueber UI-Script **pCloud Pool GC** oder Cron (siehe `pcloud_pool_gc.md`).
+Pool-GC/Retention laeuft **nicht** im Backup-Wrapper — siehe `pcloud-tools/pcloud_pool_gc.md` und [Doku: cron-jobs.md](https://github.com/lastphoenx/Doku/blob/main/Raspi/raspinas/ops/cron-jobs.md). Manuell: UI-Script **pCloud Pool GC** oder [Bedienungsanleitung](https://github.com/lastphoenx/Doku/blob/main/Raspi/raspinas/script-manager-ui/bedienungsanleitung.md).
 
 ---
 
