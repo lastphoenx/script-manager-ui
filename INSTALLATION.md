@@ -328,6 +328,18 @@ sudo systemctl reload nginx
 
 ## Teil 5: Sicherheits-Checks
 
+### ✅ Script Manager auf pi-nas (ohne Domain/nginx)
+
+Produktiv: `http://192.168.141.140:8000` im **LAN** — kein Authentik, kein öffentlicher DNS.
+
+Schutzmodell:
+
+1. **Netzwerk:** Nur VLAN/Home-LAN; kein Port-Forward in pfSense.
+2. **Optional:** Uvicorn auf `127.0.0.1` + SSH-Tunnel vom PC (`ssh -L 8000:127.0.0.1:8000 root@192.168.141.140`).
+3. **`AUTH_REQUIRED`:** In `.env` auf `false` lassen (Standard auf pi-nas). Der Header `X-Authentik-Username` wird nur für künftige nginx-Setups genutzt — die App erzwingt ihn **nicht** (sonst 401 ohne Reverse-Proxy).
+
+Falls ihr später nginx + Authentik davor schaltet: `INSTALLATION.md` Teil 4 + dann Middleware in `main.py` aktivieren (Issue/PR).
+
 ### ✅ Firewall
 
 ```bash

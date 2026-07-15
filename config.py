@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     # Authentik Forward Auth
     AUTHENTIK_HEADER: str = "X-Authentik-Username"
     AUTH_REQUIRED: bool = True
+
+    # CORS (kommagetrennt) — leer = deaktiviert; Dev z. B. http://localhost:8000
+    CORS_ORIGINS: str = ""
     
     # Job Management
     JOB_OUTPUT_MAX_SIZE: int = 10 * 1024 * 1024  # 10 MB max log size
@@ -50,6 +53,10 @@ class Settings(BaseSettings):
         super().__init__(**kwargs)
         # Ensure logs directory exists
         self.LOGS_DIR.mkdir(parents=True, exist_ok=True)
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
 
 
 # Global settings instance
