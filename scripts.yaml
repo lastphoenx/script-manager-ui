@@ -561,7 +561,7 @@ scripts:
   - name: "Safe Ops Repo Sync"
     description: "Synchronisiert alle Repositories via safe-ops-cli"
     cmd: "sudo"
-    args: ["-u", "thomas", "bash", "/opt/apps/safe-ops-cli/main/tools/sync_repos.sh"]
+    args: ["-u", "deploy", "bash", "/opt/apps/safe-ops-cli/main/tools/sync_repos.sh"]
     cwd: "/opt/apps/safe-ops-cli/main"
     category: "Security"
     tags: ["safe-ops", "git", "sync", "maintenance"]
